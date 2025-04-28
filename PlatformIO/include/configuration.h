@@ -11,6 +11,8 @@
 #define DELAY_LONG 3000
 #define DELAY_STANDARD 250
 #define DELAY_SHORT 25
+#define uS_TO_S_FACTOR 1000000ULL
+#define TIME_TO_SLEEP 5
 
 // Variables
 typedef struct SensorData {

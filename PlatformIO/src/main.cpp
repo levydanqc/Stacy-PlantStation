@@ -3,7 +3,6 @@
 #include "configuration.h"
 #include "credentials.h"
 #include "debug.h"
-#include <Arduino.h>
 #include <DHT.h>
 #include <HTTPClient.h>
 #include <SPI.h>
@@ -11,86 +10,67 @@
 
 DHT dht(4, DHT11);
 
-void uploadData(SensorData sensorData) {
-  DEBUGLN("Uploading data to server...");
-  WiFiClient client;
-  HTTPClient http;
-  http.begin(client, SERVER_URL);
+// --- Function Prototypes ---
+void connectToWiFi();
+void sendDataToServer(SensorData sensorData);
+SensorData readSensors();
+void goToDeepSleep();
+void powerOn();
 
-  DEBUG("POST to server: ");
-  DEBUGLN(SERVER_URL);
+// --- Setup Function (runs once on boot/wake) ---
+void setup() {
+  Serial.begin(115200);
+  DEBUGLN("\nESP32 Woke Up!");
 
-  // Specify content-type header
-  http.addHeader("Authorization", "API_KEY");
+  // Configure the ESP32 to wake up using a timer
+  esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
 
-  // Convert struct to JSON string
-  String jsonString = "{\"temperature\":" + String(sensorData.temperature) +
-                      ",\"humidity\":" + String(sensorData.humidity) +
-                      ",\"hic\":" + String(sensorData.hic) + "}";
-  // Send HTTP POST request
-  http.addHeader("Content-Type", "application/json");
-  int httpResponseCode = http.POST(jsonString);
+  // Attempt to connect to Wi-Fi
+  connectToWiFi();
 
-  DEBUG("HTTP Response code: ");
-  DEBUGLN(httpResponseCode);
+  // If WiFi is connected, proceed to send data
+  if (WiFi.status() == WL_CONNECTED) {
+    // 1. Simulate reading sensor data
+    SensorData data = readSensors();
+    // 2. Send data to the server
+    sendDataToServer(data);
+  } else {
+    DEBUGLN("Failed to connect to WiFi. Going back to sleep.");
+  }
 
-  // Free resources
-  http.end();
-
-  DEBUGLN("Data uploaded successfully!");
+  // 3. Go to deep sleep regardless of whether data was sent or not
+  goToDeepSleep();
 }
 
-void powerOn() {
-  // turn on the I2C power by setting pin to LOW
-  pinMode(PIN_I2C_POWER, OUTPUT);
-  digitalWrite(PIN_I2C_POWER, LOW);
-}
+// --- Loop Function (empty, as logic is in setup after wake) ---
+void loop() {}
 
-// void checkBattery() {
-// // Get battery readings
-// Adafruit_LC709203F lc;
-// if (!lc.begin()) {
-//   DEBUGLN("Could not find Adafruit LC709203F or battery not plugged in!");
-//   return;
-// }
-// delay(DELAY_STANDARD);
-// sensorData.batteryVoltage = lc.cellVoltage();
-// delay(DELAY_STANDARD);
-// sensorData.batteryPercentage = lc.cellPercent();
-// DEBUG("Batt Voltage: ");
-// DEBUGLN(sensorData.batteryVoltage);
-// DEBUG("Batt Percent: ");
-// DEBUGLN(sensorData.batteryPercentage);
-// }
+// --- Helper Functions ---
 
-bool connectToWiFi() {
-  DEBUG("Connecting to WiFi network: ");
+/**
+ * @brief Connects the ESP32 to the configured Wi-Fi network.
+ * Has a timeout to avoid getting stuck.
+ */
+void connectToWiFi() {
+  DEBUG("Connecting to WiFi: ");
   DEBUGLN(WIFI_SSID);
-  WiFi.mode(WIFI_STA);
-  if (WiFi.status() != WL_CONNECTED) {
-    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-  }
-  if (WiFi.waitForConnectResult() == WL_CONNECTED) {
-    DEBUG("WiFi connected: ");
-    DEBUGLN(WiFi.localIP());
 
-    return true;
-  }
-  DEBUGLN("WiFi not connected, check your credentials");
-  return false;
-}
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
-void gotoSleep() {
-  // Go to deep sleep
-  DEBUGLN("Going to sleep for 10 minutes");
-  WiFi.disconnect();
-  delay(DELAY_SHORT);
-  WiFi.mode(WIFI_OFF);
-  pinMode(PIN_I2C_POWER, OUTPUT);
-  digitalWrite(PIN_I2C_POWER, HIGH);
-  delay(DELAY_SHORT);
-  esp_sleep_enable_timer_wakeup(1000000); // 5 seconds
-  esp_deep_sleep_start();
+  unsigned long startTime = millis();
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    DEBUG(".");
+    // Timeout after 15 seconds
+    if (millis() - startTime > 15000) {
+      DEBUGLN("\nWiFi Connection Timeout!");
+      return; // Exit if connection fails within timeout
+    }
+  }
+
+  DEBUGLN("\nWiFi Connected!");
+  DEBUG("IP Address: ");
+  DEBUGLN(WiFi.localIP());
 }
 
 SensorData readSensors() {
@@ -118,24 +98,78 @@ SensorData readSensors() {
   return sensorData;
 }
 
-void setup() {
-#ifdef DEBUG_MODE
-  Serial.begin(115200);
-  while (!Serial)
-    ; // wait for serial connection to be ready
-  delay(DELAY_LONG);
-  Serial.flush();
-#endif
-  DEBUGLN("Debug mode on");
-  delay(DELAY_SHORT);
-  if (!connectToWiFi())
-    gotoSleep();
+/**
+ * @brief Sends the provided temperature and humidity data to the server via
+ * HTTP POST.
+ * @param temperature The temperature value.
+ * @param humidity The humidity value.
+ */
+void sendDataToServer(SensorData sensorData) {
+  if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
+    WiFiClient client; // Create a WiFiClient (needed for HTTPClient on ESP32)
 
-  SensorData data = readSensors();
-  uploadData(data);
+    DEBUG("Connecting to server: ");
+    DEBUGLN(SERVER_URL);
 
-  delay(DELAY_SHORT);
-  gotoSleep();
+    // Begin HTTP connection
+    if (http.begin(client, SERVER_URL)) {
+      // Set headers
+      http.addHeader("Content-Type", "application/json");
+      http.addHeader("Authorization", "API_KEY");
+
+      String jsonPayload =
+          "{\"temperature\":" + String(sensorData.temperature) +
+          ",\"humidity\":" + String(sensorData.humidity) +
+          ",\"hic\":" + String(sensorData.hic) + "}";
+
+      DEBUG("Sending JSON payload: ");
+      DEBUGLN(jsonPayload);
+
+      // Send POST request
+      int httpResponseCode = http.POST(jsonPayload);
+
+      // Check response
+      if (httpResponseCode > 0) {
+        DEBUGLN(String("HTTP POST response code: ") + String(httpResponseCode));
+      } else {
+        DEBUGLN(String("HTTP POST failed, error: ") +
+                http.errorToString(httpResponseCode));
+      }
+
+      // End HTTP connection
+      http.end();
+    } else {
+      DEBUGLN("HTTP connection failed. Unable to begin.");
+    }
+  } else {
+    DEBUGLN("WiFi not connected. Cannot send data.");
+  }
 }
 
-void loop() {}
+/**
+ * @brief Powers on the I2C bus by setting the power pin to LOW.
+ */
+void powerOn() {
+  // turn on the I2C power by setting pin to LOW
+  pinMode(PIN_I2C_POWER, OUTPUT);
+  digitalWrite(PIN_I2C_POWER, LOW);
+}
+
+/**
+ * @brief Puts the ESP32 into deep sleep mode.
+ */
+void goToDeepSleep() {
+  DEBUGLN(String("Going to sleep for ") + String(TIME_TO_SLEEP) +
+          String(" seconds..."));
+  WiFi.disconnect();
+  delay(DELAY_SHORT);
+  WiFi.mode(WIFI_OFF);
+
+  pinMode(PIN_I2C_POWER, OUTPUT);
+  digitalWrite(PIN_I2C_POWER, HIGH);
+  delay(DELAY_SHORT);
+
+  esp_deep_sleep_start();
+  // Code execution stops here until the ESP32 wakes up
+}
