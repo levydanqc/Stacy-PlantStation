@@ -32,7 +32,7 @@ const weatherRoutes = (app, fs) => {
   };
 
   // CREATE
-  app.post('/weather', (req, res) => {
+  app.post('/weather', (req, res) => {backend/routes/weather.js
     console.log('req.body', req.body);
     // check if the request header has Authorization
     if (!req.headers.authorization || req.headers.authorization !== 'API_KEY') {
@@ -43,7 +43,7 @@ const weatherRoutes = (app, fs) => {
       const newUserId = Date.now().toString();
 
       // add the new user
-      data[newUserId.toString()] = req.body;
+      // data[newUserId.toString()] = req.body;
 
       // console.log('data', data);
 

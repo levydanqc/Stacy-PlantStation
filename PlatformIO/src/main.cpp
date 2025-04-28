@@ -4,9 +4,12 @@
 #include "credentials.h"
 #include "debug.h"
 #include <Arduino.h>
+#include <DHT.h>
 #include <HTTPClient.h>
 #include <SPI.h>
 #include <WiFi.h>
+
+DHT dht(4, DHT11);
 
 void uploadData(SensorData sensorData) {
   DEBUGLN("Uploading data to server...");
@@ -23,7 +26,7 @@ void uploadData(SensorData sensorData) {
   // Convert struct to JSON string
   String jsonString = "{\"temperature\":" + String(sensorData.temperature) +
                       ",\"humidity\":" + String(sensorData.humidity) +
-                      ",\"pressure\":" + String(sensorData.pressure) + "}";
+                      ",\"hic\":" + String(sensorData.hic) + "}";
   // Send HTTP POST request
   http.addHeader("Content-Type", "application/json");
   int httpResponseCode = http.POST(jsonString);
@@ -93,16 +96,24 @@ void gotoSleep() {
 SensorData readSensors() {
   powerOn(); // turn on the I2C power
   delay(DELAY_LONG);
-  // read the sensors
 
-  // TODO: Add your sensor reading code here
+  DEBUGLN("Reading DHT sensor...");
+  dht.begin();
+  delay(DELAY_LONG);
 
-  // TODO: Save the sensor data to the struct
   SensorData sensorData;
-  float temperature = analogRead(4);
-  sensorData.temperature = temperature;
-  sensorData.humidity = 49.54;
-  sensorData.pressure = 1005.14;
+  sensorData.temperature = dht.readTemperature();
+  sensorData.humidity = dht.readHumidity();
+  sensorData.hic =
+      dht.computeHeatIndex(sensorData.temperature, sensorData.humidity, false);
+
+  DEBUG("Temperature: ");
+  DEBUG(sensorData.temperature);
+  DEBUG(" °C, Humidity: ");
+  DEBUG(sensorData.humidity);
+  DEBUG(" %, HIC: ");
+  DEBUG(sensorData.hic);
+  DEBUGLN(" °C");
 
   return sensorData;
 }
