@@ -1,14 +1,14 @@
 {
-	"folders": [
-		{
-			"path": "stacy_frontend"
-		},
-		{
-			"path": "PlatformIO"
-		},
-		{
-			"path": "backend"
-		}
-	],
-	"settings": {}
+  "folders": [
+	{
+		"path": "stacy_frontend"
+	},
+	{
+		"path": "PlatformIO"
+	},
+	{
+		"path": "backend"
+	}
+],
+  "settings": {}
 }

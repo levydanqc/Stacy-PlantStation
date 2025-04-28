@@ -59,12 +59,11 @@ void connectToWiFi() {
 
   unsigned long startTime = millis();
   while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    DEBUG(".");
-    // Timeout after 15 seconds
-    if (millis() - startTime > 15000) {
+    delay(DELAY_STANDARD);
+    // Timeout after 5 seconds
+    if (millis() - startTime > 5000) {
       DEBUGLN("\nWiFi Connection Timeout!");
-      return; // Exit if connection fails within timeout
+      return;
     }
   }
 
@@ -75,11 +74,11 @@ void connectToWiFi() {
 
 SensorData readSensors() {
   powerOn(); // turn on the I2C power
-  delay(DELAY_LONG);
+  delay(DELAY_STANDARD);
 
   DEBUGLN("Reading DHT sensor...");
   dht.begin();
-  delay(DELAY_LONG);
+  delay(DELAY_SHORT);
 
   SensorData sensorData;
   sensorData.temperature = dht.readTemperature();
