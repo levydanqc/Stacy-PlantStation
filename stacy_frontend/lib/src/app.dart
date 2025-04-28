@@ -6,6 +6,7 @@ import 'sample_feature/sample_item_details_view.dart';
 import 'sample_feature/sample_item_list_view.dart';
 import 'settings/settings_controller.dart';
 import 'settings/settings_view.dart';
+import 'views/weather_view.dart';
 
 /// The Widget that configures your application.
 class MyApp extends StatelessWidget {
@@ -71,6 +72,8 @@ class MyApp extends StatelessWidget {
                     return SettingsView(controller: settingsController);
                   case SampleItemDetailsView.routeName:
                     return const SampleItemDetailsView();
+                  case WeatherView.routeName:
+                    return const WeatherView();
                   case SampleItemListView.routeName:
                   default:
                     return const SampleItemListView();

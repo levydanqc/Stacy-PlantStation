@@ -1,5 +1,5 @@
 name: stacy_frontend
-description: "A new Flutter project."
+description: 'A new Flutter project.'
 
 # Prevent accidental publishing to pub.dev.
 publish_to: 'none'
@@ -14,6 +14,8 @@ dependencies:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
+  web_socket_channel: ^3.0.3
+  fbroadcast: ^2.0.0
 
 dev_dependencies:
   flutter_test:
