@@ -1,9 +1,13 @@
-import 'package:flutter/material.dart';
-import 'package:web_socket_channel/web_socket_channel.dart'; // For WebSocket communication
 import 'dart:convert'; // For jsonDecode
+
+import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:web_socket_channel/web_socket_channel.dart'; // For WebSocket communication
 
 class WeatherDisplay extends StatefulWidget {
   const WeatherDisplay({super.key});
+
+  static const routeName = '/weather';
 
   @override
   State<WeatherDisplay> createState() => _WeatherDisplayState();
@@ -14,7 +18,7 @@ class _WeatherDisplayState extends State<WeatherDisplay> {
   // of the machine running your Node.js server.
   // The port should match the HTTP_PORT in your server.js (e.g., 8080).
   final String _webSocketUrl =
-      'ws://<YOUR_SERVER_IP>:8080'; // Example: 'ws://192.168.1.105:8080'
+      dotenv.env['WEBSOCKET_URL'] ?? 'ws://<YOUR_SERVER_IP>:8080';
 
   WebSocketChannel? _channel; // Make channel nullable
   Map<String, dynamic> _weatherData = {}; // Store latest weather data
@@ -113,7 +117,6 @@ class _WeatherDisplayState extends State<WeatherDisplay> {
     }
   }
 
-  // Optional: Simple reconnection logic
   void _scheduleReconnect() {
     if (!mounted) return; // Don't schedule if widget is disposed
     print("Scheduling reconnection in 5 seconds...");

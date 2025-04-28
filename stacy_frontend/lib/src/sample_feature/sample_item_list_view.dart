@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../settings/settings_view.dart';
-import 'sample_item.dart';
-import 'sample_item_details_view.dart';
 import '../views/weather_view.dart';
+import 'sample_item.dart';
 
 /// Displays a list of SampleItems.
 class SampleItemListView extends StatelessWidget {
@@ -61,7 +60,7 @@ class SampleItemListView extends StatelessWidget {
                 // background, the navigation stack is restored.
                 Navigator.restorablePushNamed(
                   context,
-                  WeatherView.routeName,
+                  WeatherDisplay.routeName,
                 );
               });
         },
