@@ -32,14 +32,14 @@ const weatherRoutes = (app, fs) => {
   };
 
   // CREATE
-  app.post('/weather', (req, res) => {backend/routes/weather.js
-    console.log('req.body', req.body);
+  app.post('/weather', (req, res) => {
     // check if the request header has Authorization
     if (!req.headers.authorization || req.headers.authorization !== 'API_KEY') {
       console.log('Unauthorized');
       return res.status(401).send('Unauthorized');
     }
     readFile((data) => {
+      console.log('req.body', req.body);
       const newUserId = Date.now().toString();
 
       // add the new user
@@ -60,6 +60,11 @@ const weatherRoutes = (app, fs) => {
     readFile((data) => {
       res.status(200).send(data);
     }, true);
+
+    // send an update to a websocket client
+
+    // use function
+    createWebSocketClient(data);
   });
 };
 
