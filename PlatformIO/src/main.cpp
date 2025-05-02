@@ -3,12 +3,19 @@
 #include "configuration.h"
 #include "credentials.h"
 #include "debug.h"
-#include <DHT.h>
+#include <BME280I2C.h>
+#include <EnvironmentCalculations.h>
 #include <HTTPClient.h>
 #include <SPI.h>
 #include <WiFi.h>
+#include <Wire.h>
 
-DHT dht(4, DHT11);
+BME280I2C::Settings settings(BME280::OSR_X1, BME280::OSR_X1, BME280::OSR_X1,
+                             BME280::Mode_Forced, BME280::StandbyTime_500us,
+                             BME280::Filter_2, BME280::SpiEnable_False,
+                             BME280_ADDR);
+
+BME280I2C bme280(settings);
 
 // --- Function Prototypes ---
 void connectToWiFi();
@@ -25,20 +32,23 @@ void setup() {
   // Configure the ESP32 to wake up using a timer
   esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
 
+  // Start I2C communication
+  Wire.begin(I2C_SDA_PIN, I2C_SCL_PIN);
+
   // Attempt to connect to Wi-Fi
   connectToWiFi();
 
   // If WiFi is connected, proceed to send data
-  if (WiFi.status() == WL_CONNECTED) {
-    // 1. Simulate reading sensor data
-    SensorData data = readSensors();
-    // 2. Send data to the server
-    sendDataToServer(data);
-  } else {
+  if (WiFi.status() != WL_CONNECTED) {
     DEBUGLN("Failed to connect to WiFi. Going back to sleep.");
+    goToDeepSleep();
   }
 
-  // 3. Go to deep sleep regardless of whether data was sent or not
+  SensorData data = readSensors();
+  data.batteryPercentage = calculateBatteryPercentage(readBatteryVoltage());
+
+  sendDataToServer(data);
+
   goToDeepSleep();
 }
 
@@ -74,25 +84,18 @@ void connectToWiFi() {
 
 SensorData readSensors() {
   powerOn(); // turn on the I2C power
-  delay(DELAY_STANDARD);
-
-  DEBUGLN("Reading DHT sensor...");
-  dht.begin();
   delay(DELAY_SHORT);
 
-  SensorData sensorData;
-  sensorData.temperature = dht.readTemperature();
-  sensorData.humidity = dht.readHumidity();
-  sensorData.hic =
-      dht.computeHeatIndex(sensorData.temperature, sensorData.humidity, false);
+  DEBUGLN("Reading BME280 sensor...");
 
-  DEBUG("Temperature: ");
-  DEBUG(sensorData.temperature);
-  DEBUG(" °C, Humidity: ");
-  DEBUG(sensorData.humidity);
-  DEBUG(" %, HIC: ");
-  DEBUG(sensorData.hic);
-  DEBUGLN(" °C");
+  SensorData sensorData;
+  bme280.read(sensorData.temperature, sensorData.pressure, sensorData.humidity,
+              TEMP_UNIT, PRES_UNIT);
+
+  sensorData.dewPoint = EnvironmentCalculations::DewPoint(
+      sensorData.temperature, sensorData.humidity, ENV_TEMP_UNIT);
+  sensorData.hic = EnvironmentCalculations::HeatIndex(
+      sensorData.temperature, sensorData.humidity, ENV_TEMP_UNIT);
 
   return sensorData;
 }
@@ -120,7 +123,10 @@ void sendDataToServer(SensorData sensorData) {
       String jsonPayload =
           "{\"temperature\":" + String(sensorData.temperature) +
           ",\"humidity\":" + String(sensorData.humidity) +
-          ",\"hic\":" + String(sensorData.hic) + "}";
+          ",\"hic\":" + String(sensorData.hic) +
+          ",\"dewPoint\":" + String(sensorData.dewPoint) +
+          ",\"batteryPercentage\":" + String(sensorData.batteryPercentage) +
+          ",\"pressure\":" + String(sensorData.pressure) + "}";
 
       DEBUG("Sending JSON payload: ");
       DEBUGLN(jsonPayload);
@@ -171,4 +177,32 @@ void goToDeepSleep() {
 
   esp_deep_sleep_start();
   // Code execution stops here until the ESP32 wakes up
+}
+
+/**
+ * @brief Reads the battery voltage from the ADC pin.
+ * @return The battery voltage.
+ */
+float readBatteryVoltage() {
+  analogSetPinAttenuation(BATTERY_PIN,
+                          ADC_11db); // Configure ADC for 0-2.5V range
+  int raw = analogRead(BATTERY_PIN); // Read raw ADC value
+  float vOut = (raw / 4095.0) * 2.5; // Convert ADC value to voltage
+  float vBattery = vOut / 0.5;       // Scale to battery voltage
+  return vBattery;
+}
+
+/**
+ * @brief Calculates the battery percentage based on the voltage.
+ * @param voltage The voltage value.
+ * @return The calculated battery percentage.
+ */
+int calculateBatteryPercentage(float voltage) {
+  float percentage =
+      ((voltage - BATTERY_MIN) / (BATTERY_MAX - BATTERY_MIN)) * 100.0;
+  if (percentage > 100)
+    percentage = 100;
+  if (percentage < 0)
+    percentage = 0;
+  return (int)percentage;
 }
