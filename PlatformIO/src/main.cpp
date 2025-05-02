@@ -21,16 +21,14 @@ BME280I2C bme280(settings);
 void connectToWiFi();
 void sendDataToServer(SensorData sensorData);
 SensorData readSensors();
-void goToDeepSleep();
-void powerOn();
+void powerOff();
 
 // --- Setup Function (runs once on boot/wake) ---
 void setup() {
   Serial.begin(115200);
   DEBUGLN("\nESP32 Woke Up!");
 
-  // Configure the ESP32 to wake up using a timer
-  esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
+  pinMode(TPL5110_DONE_PIN, OUTPUT);
 
   // Start I2C communication
   Wire.begin(I2C_SDA_PIN, I2C_SCL_PIN);
@@ -41,7 +39,7 @@ void setup() {
   // If WiFi is connected, proceed to send data
   if (WiFi.status() != WL_CONNECTED) {
     DEBUGLN("Failed to connect to WiFi. Going back to sleep.");
-    goToDeepSleep();
+    return;
   }
 
   SensorData data = readSensors();
@@ -49,7 +47,8 @@ void setup() {
 
   sendDataToServer(data);
 
-  goToDeepSleep();
+  // Signal the TPL5110 to turn off power
+  powerOff();
 }
 
 // --- Loop Function (empty, as logic is in setup after wake) ---
@@ -83,7 +82,6 @@ void connectToWiFi() {
 }
 
 SensorData readSensors() {
-  powerOn(); // turn on the I2C power
   delay(DELAY_SHORT);
 
   DEBUGLN("Reading BME280 sensor...");
@@ -153,30 +151,14 @@ void sendDataToServer(SensorData sensorData) {
 }
 
 /**
- * @brief Powers on the I2C bus by setting the power pin to LOW.
+ * @brief Turn off power by controlling the TPL5110 DONE pin.
+ * This function sets the TPL5110 DONE pin to LOW and then HIGH to signal
+ * the TPL5110 to turn off power.
  */
-void powerOn() {
-  // turn on the I2C power by setting pin to LOW
-  pinMode(PIN_I2C_POWER, OUTPUT);
-  digitalWrite(PIN_I2C_POWER, LOW);
-}
-
-/**
- * @brief Puts the ESP32 into deep sleep mode.
- */
-void goToDeepSleep() {
-  DEBUGLN(String("Going to sleep for ") + String(TIME_TO_SLEEP) +
-          String(" seconds..."));
-  WiFi.disconnect();
-  delay(DELAY_SHORT);
-  WiFi.mode(WIFI_OFF);
-
-  pinMode(PIN_I2C_POWER, OUTPUT);
-  digitalWrite(PIN_I2C_POWER, HIGH);
-  delay(DELAY_SHORT);
-
-  esp_deep_sleep_start();
-  // Code execution stops here until the ESP32 wakes up
+void powerOff() {
+  digitalWrite(TPL5110_DONE_PIN, LOW);
+  digitalWrite(TPL5110_DONE_PIN, HIGH);
+  delay(100);
 }
 
 /**

@@ -16,14 +16,14 @@
 // I2C
 #define I2C_SDA_PIN 8
 #define I2C_SCL_PIN 9
-#define PIN_I2C_POWER 7 // needed for I2C power management
+
+// TPL5110
+#define TPL5110_DONE_PIN 10
 
 // Constants
 #define DELAY_LONG 3000
 #define DELAY_STANDARD 250
 #define DELAY_SHORT 25
-#define uS_TO_S_FACTOR 1000000ULL
-#define TIME_TO_SLEEP 5
 
 // BME280 sensor Units
 BME280::TempUnit TEMP_UNIT = BME280::TempUnit_Celsius;
