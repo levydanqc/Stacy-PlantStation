@@ -22,6 +22,9 @@ void connectToWiFi();
 void sendDataToServer(SensorData sensorData);
 SensorData readSensors();
 void powerOff();
+float readCapacitance();
+float readBatteryVoltage();
+int calculateBatteryPercentage(float voltage);
 
 // --- Setup Function (runs once on boot/wake) ---
 void setup() {
@@ -167,10 +170,10 @@ void powerOff() {
  */
 float readBatteryVoltage() {
   analogSetPinAttenuation(BATTERY_PIN,
-                          ADC_11db); // Configure ADC for 0-2.5V range
-  int raw = analogRead(BATTERY_PIN); // Read raw ADC value
-  float vOut = (raw / 4095.0) * 2.5; // Convert ADC value to voltage
-  float vBattery = vOut / 0.5;       // Scale to battery voltage
+                          ADC_11db);      // Configure ADC for 0-2.5V range
+  uint16_t raw = analogRead(BATTERY_PIN); // Read raw ADC value
+  float vOut = (raw / 4095.0) * 2.5;      // Convert ADC value to voltage
+  float vBattery = vOut / 0.5;            // Scale to battery voltage
   return vBattery;
 }
 
@@ -187,4 +190,17 @@ int calculateBatteryPercentage(float voltage) {
   if (percentage < 0)
     percentage = 0;
   return (int)percentage;
+}
+
+/**
+ * @brief Reads the capacitance value from the sensor.
+ * @return The capacitance value.
+ */
+float readCapacitance() {
+  uint16_t sensorValue = analogRead(CAPACITANCE_PIN);
+
+  float voltage = sensorValue * (3.3 / 4095.0);
+  // TODO : calibrate this value
+  float capacitance = (voltage * 10.0) + 5.0;
+  return capacitance;
 }
