@@ -9,7 +9,7 @@ import 'settings/settings_controller.dart';
 import 'settings/settings_view.dart';
 import 'views/weather_view.dart';
 
-/// The Widget that configures your application.
+
 class MyApp extends StatelessWidget {
   const MyApp({
     super.key,
