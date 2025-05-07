@@ -19,6 +19,7 @@ typedef struct SensorData {
   float temperature = 0.0;
   float humidity = 0.0;
   float pressure = 0.0;
+  float moisture = 0.0;
   float hic = 0.0;
   float batteryVoltage = 0.0;
   float batteryPercentage = 0.0;

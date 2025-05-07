@@ -1,74 +1,110 @@
-const weatherRoutes = (app, fs) => {
-  const dataPath = './data/weather.json';
+const SensorData = require('../models/sensorData');
+const database = require('../utilities/database');
+const broadcast = require('../utilities/broadcast');
+const authenticateToken = require('../middleware/authenticateToken.js');
 
-  const readFile = (
-    callback,
-    returnJson = false,
-    filePath = dataPath,
-    encoding = 'utf8'
-  ) => {
-    fs.readFile(filePath, encoding, (err, data) => {
-      if (err) {
-        throw err;
-      }
+const weatherRoutes = (app, clients) => {
+  app.use('/weather', authenticateToken);
 
-      callback(returnJson ? JSON.parse(data) : data);
-    });
-  };
-
-  const writeFile = (
-    fileData,
-    callback,
-    filePath = dataPath,
-    encoding = 'utf8'
-  ) => {
-    fs.writeFile(filePath, fileData, encoding, (err) => {
-      if (err) {
-        throw err;
-      }
-
-      callback();
-    });
-  };
-
-  // CREATE
+  // HTTP Endpoint for ESP32 to send data
   app.post('/weather', (req, res) => {
-    // check if the request header has Authorization
-    if (!req.headers.authorization || req.headers.authorization !== 'API_KEY') {
-      console.log('Unauthorized');
-      return res.status(401).send('Unauthorized');
+    const rawDataFromDevice = req.body;
+    const device_id = req.headers['device-id'];
+
+    console.log('Received data from device: ', device_id);
+
+    if (!device_id || device_id.length === 0) {
+      console.warn('Unauthorized: No Device-ID provided');
+      return res
+        .status(401)
+        .send({ message: 'Unauthorized: No Device-ID provided.' });
     }
-    readFile((data) => {
-      console.log('req.body', req.body);
-      const newUserId = Date.now().toString();
 
-      // add the new user
-      // data[newUserId.toString()] = req.body;
+    try {
+      const sensorDataObject = SensorData.fromObject(rawDataFromDevice);
 
-      // console.log('data', data);
+      // Get a plain object for database and broadcasting
+      const dataToStoreAndBroadcast = sensorDataObject.toObject();
 
-      //   writeFile(JSON.stringify(data, null, 2), () => {
-      //     res.status(200).send('new user added');
+      console.log(
+        `Data received from device_id "${device_id}":`,
+        JSON.stringify(dataToStoreAndBroadcast)
+      );
+
+      database.getClientIdByDeviceId(device_id).then((client_id) => {
+        if (!client_id) {
+          console.warn(
+            `No client_id found for device_id "${device_id}". Data will not be broadcasted.`
+          );
+          return res.status(404).send({
+            message: `No client_id found for device_id "${device_id}".`,
+          });
+        }
+        broadcast(
+          clients,
+          JSON.stringify({ type: 'update', ...dataToStoreAndBroadcast }),
+          client_id
+        );
+
+        res
+          .status(200)
+          .send({ message: 'Data received and stored successfully' });
+      });
+
+      // Store the data in the database
+      // database
+      //   .saveDataToDatabase(dataToStoreAndBroadcast, device_id)
+      //   .then(() => {
+      //     console.log(
+      //       `Data for device_id "${device_id}" saved to database successfully.`
+      //     );
+      //     // Broadcast the new data to all connected WebSocket clients
+      //     broadcast(
+      //       JSON.stringify({ type: 'update', ...dataToStoreAndBroadcast })
+      //     );
+      //     res
+      //       .status(200)
+      //       .send({ message: 'Data received and stored successfully' });
+      //   })
+      //   .catch((error) => {
+      //     console.error(
+      //       `Error saving data to database for device_id "${device_id}":`,
+      //       error
+      //     );
+      //     res.status(500).send({
+      //       message: 'Error saving data to database. Check server logs.',
+      //     });
       //   });
-    }, true);
-
-    return res.status(200).send('good');
+    } catch (error) {
+      // This catch block will handle errors from SensorData.fromObject (validation errors)
+      // or any other synchronous errors in the try block.
+      console.error('Error processing incoming sensor data:', error.message);
+      return res
+        .status(400)
+        .send({ message: `Invalid sensor data: ${error.message}` });
+    }
   });
 
-  // READ
-  app.get('/weather', (req, res) => {
-    readFile((data) => {
-      res.status(200).send(data);
-    }, true);
+  // --- Example GET Endpoints (no auth added here, but you could add it) ---
+  app.get('/weather/:client_id', (req, res) => {
+    const { client_id } = req.params;
 
-    // send an update to a websocket client
-
-    // use function
-    createWebSocketClient(data);
+    database
+      .getDataByClient(client_id)
+      .then((data) => {
+        if (data && data.length > 0) {
+          res.status(200).json(data);
+        } else {
+          res
+            .status(404)
+            .json({ message: `No data found for client_id: ${client_id}` });
+        }
+      })
+      .catch((err) => {
+        console.error(`Error fetching data for client_id ${client_id}:`, err);
+        res.status(500).json({ message: 'Error fetching data from database' });
+      });
   });
 };
-
-// Write a curl command to test the above API
-// curl -X GET http://localhost:3001/weather
 
 module.exports = weatherRoutes;
