@@ -25,9 +25,7 @@ database.connectDatabase();
 // --- Start the HTTP Server ---
 server.listen(PORT, () => {
   console.log(`HTTP server listening on port ${PORT} at ${ADDRESS}`);
-  console.log(
-    `ESP32 should send POST requests to http://${ADDRESS}:${PORT}/weather`
-  );
+  console.log(`ESP32 should send POST requests to http://${ADDRESS}:${PORT}`);
   console.log(`Flutter app should connect to ws://${ADDRESS}:${PORT}`);
 });
 

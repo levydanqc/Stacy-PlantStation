@@ -1,4 +1,4 @@
-const broadcast = function (clients, data, client_id) {
+const broadcast = function (clients, data, user_id) {
   console.log(`Broadcasting data to ${clients.size} clients: ${data}`);
   if (clients.size === 0) {
     console.log('No clients connected to broadcast data to.');
@@ -6,7 +6,7 @@ const broadcast = function (clients, data, client_id) {
   }
 
   clients.forEach((id, client) => {
-    if (client.readyState === WebSocket.OPEN && client_id === id) {
+    if (client.readyState === WebSocket.OPEN && user_id === id) {
       try {
         client.send(data);
         console.log(`Sent data to client ${id}: ${data}`);

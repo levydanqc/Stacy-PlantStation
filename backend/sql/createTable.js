@@ -11,10 +11,10 @@ const createDevicesTable = `
 CREATE TABLE IF NOT EXISTS devices (
     device_id TEXT PRIMARY KEY, -- Unique ID from the ESP32 (MAC address)
     user_id INTEGER NOT NULL,
-    device_name TEXT, -- User-friendly name for the device
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(user_id)
 );`;
+
 const createPlantsTable = `
 CREATE TABLE IF NOT EXISTS plants (
     plant_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS plants (
     FOREIGN KEY (user_id) REFERENCES users(user_id),
     FOREIGN KEY (device_id) REFERENCES devices(device_id)
 );`;
+
 const createSensorDataTable = `
 CREATE TABLE IF NOT EXISTS sensor_data (
     data_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -32,8 +33,11 @@ CREATE TABLE IF NOT EXISTS sensor_data (
     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
     temperature REAL,
     humidity REAL,
-    moisture INTEGER,
-    -- Add other sensor readings here
+    moisture REAL,
+    pressure REAL,
+    hic REAL,
+    batteryVoltage REAL,
+    batteryPercentage REAL,
     FOREIGN KEY (plant_id) REFERENCES plants(plant_id)
 );`;
 

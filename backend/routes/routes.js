@@ -1,14 +1,13 @@
 const weatherRoutes = require('./weather.js');
 const usersRoutes = require('./users.js');
+const plantsRoutes = require('./plants.js')
+const devicesRoutes = require('./devices.js')
 
 const appRouter = (app, clients) => {
-  app.get('/', (req, res) => {
-    res.send('welcome to the development api-server');
-  });
-
-  // other routes
   weatherRoutes(app, clients);
-  usersRoutes(app, clients);
+  usersRoutes(app);
+  plantsRoutes(app);
+  devicesRoutes(app);
 };
 
 module.exports = appRouter;

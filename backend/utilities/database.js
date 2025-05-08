@@ -1,12 +1,8 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
-const {
-  createUsersTable,
-  createDevicesTable,
-  createPlantsTable,
-  createSensorDataTable,
-  createIndex,
-} = require('../sql/createTable.js');
+const User = require('../models/User');
+const sql = require('../sql/sql');
+const sqlInitialize = require('../sql/createTable.js');
 
 const dbPath = path.resolve(__dirname, '../plant_station.db');
 
@@ -47,19 +43,29 @@ function connectDatabase() {
 async function initializeDatabase() {
   try {
     await new Promise((resolve, reject) =>
-      db.exec(createUsersTable, (err) => (err ? reject(err) : resolve()))
+      db.exec(sqlInitialize.createUsersTable, (err) =>
+        err ? reject(err) : resolve()
+      )
     );
     await new Promise((resolve, reject) =>
-      db.exec(createDevicesTable, (err) => (err ? reject(err) : resolve()))
+      db.exec(sqlInitialize.createPlantsTable, (err) =>
+        err ? reject(err) : resolve()
+      )
     );
     await new Promise((resolve, reject) =>
-      db.exec(createPlantsTable, (err) => (err ? reject(err) : resolve()))
+      db.exec(sqlInitialize.createDevicesTable, (err) =>
+        err ? reject(err) : resolve()
+      )
     );
     await new Promise((resolve, reject) =>
-      db.exec(createSensorDataTable, (err) => (err ? reject(err) : resolve()))
+      db.exec(sqlInitialize.createSensorDataTable, (err) =>
+        err ? reject(err) : resolve()
+      )
     );
     await new Promise((resolve, reject) =>
-      db.exec(createIndex, (err) => (err ? reject(err) : resolve()))
+      db.exec(sqlInitialize.createIndex, (err) =>
+        err ? reject(err) : resolve()
+      )
     );
     console.log('Database initialized successfully.');
   } catch (error) {
@@ -73,10 +79,10 @@ async function initializeDatabase() {
  * @param {string} device_id - The ID of the device (MAC address).
  * @returns {Promise<void>} A promise that resolves when data is saved, or rejects on error.
  */
-function saveDataToDatabase(weatherData, device_id) {
+function saveDataToDatabase(weatherData, device_id, user_id) {
+  // TODO : Revise logic and data
   return new Promise((resolve, reject) => {
     const {
-      client_id,
       temperature,
       humidity,
       moisture,
@@ -91,15 +97,18 @@ function saveDataToDatabase(weatherData, device_id) {
       return reject(new Error('device_id is required'));
     }
 
-    const insertSql = `
-      INSERT INTO weather_data (client_id, temperature, humidity, pressure)
-      VALUES (?, ?, ?, ?);
-    `;
-
     // The timestamp will be added automatically by the database (DEFAULT CURRENT_TIMESTAMP)
     db.run(
-      insertSql,
-      [client_id, temperature, humidity, pressure],
+      sql.addSensorDataSQL,
+      [
+        temperature,
+        humidity,
+        moisture,
+        pressure,
+        hic,
+        batteryVoltage,
+        batteryPercentage,
+      ],
       function (err) {
         // Use function keyword to access `this.lastID`
         if (err) {
@@ -122,9 +131,9 @@ function saveDataToDatabase(weatherData, device_id) {
  * @returns {Promise<Array<object>>} A promise that resolves with an array of data rows.
  */
 function getDataByClient(clientId) {
+  // TODO : Revise logic and data
   return new Promise((resolve, reject) => {
-    const selectSql = `SELECT * FROM weather_data WHERE client_id = ? ORDER BY timestamp DESC;`;
-    db.all(selectSql, [clientId], (err, rows) => {
+    db.all(getAllDataFromClientIdSQL, [clientId], (err, rows) => {
       if (err) {
         console.error('Error fetching data by client_id:', err.message);
         reject(err);
@@ -141,38 +150,96 @@ function getDataByClient(clientId) {
  * @returns {Promise<string>} A promise that resolves with the client ID.
  */
 function getClientIdByDeviceId(device_id) {
+  // TODO : Revise logic and data
   return new Promise((resolve, reject) => {
-    const selectSql = `
-      SELECT client_id FROM devices WHERE device_id = ?;
-    `;
-    db.get(selectSql, [device_id], (err, row) => {
+    db.get(selectIdFromDeviceID, [device_id], (err, row) => {
       if (err) {
         console.error('Error fetching client_id by device_id:', err.message);
         reject(err);
       } else if (row) {
         resolve(row.client_id);
       } else {
-        resolve(null); // No matching client_id found
+        resolve(null);
+      }
+    });
+  });
+}
+
+function getPlantIdByUserIdAndDeviceId(user_id, device_id) {
+  // TODO : Revise logic and data
+  return new Promise((resolve, reject) => {
+    db.get(getPlantIdSQL, [user_id, device_id], (err, row) => {
+      if (err) {
+        console.error('Error fetching client_id by device_id:', err.message);
+        reject(err);
+      } else if (row) {
+        resolve(row.client_id);
+      } else {
+        resolve(null);
       }
     });
   });
 }
 
 /**
- * Retrieves all weather data.
- * @returns {Promise<Array<object>>} A promise that resolves with an array of all data rows.
+ * Saves a new User in the database.
+ * @param {User} user - The User data object.
+ * @returns {Promise<string>} A promise that resolves with the user ID.
  */
-function getAllData() {
+function createUser(user) {
+  // TODO : it needs to return the user_id for the client
   return new Promise((resolve, reject) => {
-    const selectSql = `SELECT * FROM weather_data ORDER BY timestamp DESC;`;
-    db.all(selectSql, [], (err, rows) => {
+    db.run(
+      sql.addUserSQL,
+      [user.username, user.email, user.password_hash],
+      function (err) {
+        if (err) {
+          console.error('Error inserting data into database:', err.message);
+          reject(err);
+        } else {
+          console.log('A row in user table has been inserted');
+          resolve();
+        }
+      }
+    );
+  });
+}
+
+function createDevice(device_id, user_id) {
+  return new Promise((resolve, reject) => {
+    db.run(sql.addDeviceSQL, [device_id, user_id], function (err) {
       if (err) {
-        console.error('Error fetching all data:', err.message);
+        console.error('Error inserting data into database:', err.message);
         reject(err);
       } else {
-        resolve(rows);
+        console.log('A row in user table has been inserted');
+        resolve();
       }
     });
+  });
+}
+
+/**
+ * Saves a new Plant in the database.
+ * @param {Plant} plant - The Plant data object.
+ * @returns {Promise<string>} A promise that resolves with plant ID
+ */
+function createPlant(plant) {
+  // TODO : it needs to return the plant_id for the client
+  return new Promise((resolve, reject) => {
+    db.run(
+      sql.addPlantSQL,
+      [plant.device_id, plant.plant_name],
+      function (err) {
+        if (err) {
+          console.error('Error inserting data into database:', err.message);
+          reject(err);
+        } else {
+          console.log('A row in plant table has been inserted');
+          resolve();
+        }
+      }
+    );
   });
 }
 
@@ -192,6 +259,7 @@ module.exports = {
   connectDatabase,
   saveDataToDatabase,
   getDataByClient,
-  getAllData,
   getClientIdByDeviceId,
+  createUser,
+  createDevice,
 };

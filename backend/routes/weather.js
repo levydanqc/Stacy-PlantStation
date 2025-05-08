@@ -10,6 +10,7 @@ const weatherRoutes = (app, clients) => {
   app.post('/weather', (req, res) => {
     const rawDataFromDevice = req.body;
     const device_id = req.headers['device-id'];
+    const user_id = req.headers['user-id'];
 
     console.log('Received data from device: ', device_id);
 
@@ -18,6 +19,12 @@ const weatherRoutes = (app, clients) => {
       return res
         .status(401)
         .send({ message: 'Unauthorized: No Device-ID provided.' });
+    }
+    if (!user_id || user_id.length === 0) {
+      console.warn('Unauthorized: No User-ID provided');
+      return res
+        .status(401)
+        .send({ message: 'Unauthorized: No User-ID provided.' });
     }
 
     try {
@@ -31,53 +38,32 @@ const weatherRoutes = (app, clients) => {
         JSON.stringify(dataToStoreAndBroadcast)
       );
 
-      database.getClientIdByDeviceId(device_id).then((client_id) => {
-        if (!client_id) {
-          console.warn(
-            `No client_id found for device_id "${device_id}". Data will not be broadcasted.`
+      database
+        .saveDataToDatabase(dataToStoreAndBroadcast, device_id, user_id)
+        .then(() => {
+          console.log(
+            `Data for device_id "${device_id}" saved to database successfully.`
           );
-          return res.status(404).send({
-            message: `No client_id found for device_id "${device_id}".`,
+          // Broadcast the new data to all connected WebSocket clients
+          broadcast(
+            clients,
+            JSON.stringify({ type: 'update', ...dataToStoreAndBroadcast }),
+            user_id
+          );
+          return res
+            .status(200)
+            .send({ message: 'Data received and stored successfully' });
+        })
+        .catch((error) => {
+          console.error(
+            `Error saving data to database for device_id "${device_id}":`,
+            error
+          );
+          return res.status(500).send({
+            message: 'Error saving data to database. Check server logs.',
           });
-        }
-        broadcast(
-          clients,
-          JSON.stringify({ type: 'update', ...dataToStoreAndBroadcast }),
-          client_id
-        );
-
-        res
-          .status(200)
-          .send({ message: 'Data received and stored successfully' });
-      });
-
-      // Store the data in the database
-      // database
-      //   .saveDataToDatabase(dataToStoreAndBroadcast, device_id)
-      //   .then(() => {
-      //     console.log(
-      //       `Data for device_id "${device_id}" saved to database successfully.`
-      //     );
-      //     // Broadcast the new data to all connected WebSocket clients
-      //     broadcast(
-      //       JSON.stringify({ type: 'update', ...dataToStoreAndBroadcast })
-      //     );
-      //     res
-      //       .status(200)
-      //       .send({ message: 'Data received and stored successfully' });
-      //   })
-      //   .catch((error) => {
-      //     console.error(
-      //       `Error saving data to database for device_id "${device_id}":`,
-      //       error
-      //     );
-      //     res.status(500).send({
-      //       message: 'Error saving data to database. Check server logs.',
-      //     });
-      //   });
+        });
     } catch (error) {
-      // This catch block will handle errors from SensorData.fromObject (validation errors)
-      // or any other synchronous errors in the try block.
       console.error('Error processing incoming sensor data:', error.message);
       return res
         .status(400)
@@ -85,7 +71,6 @@ const weatherRoutes = (app, clients) => {
     }
   });
 
-  // --- Example GET Endpoints (no auth added here, but you could add it) ---
   app.get('/weather/:client_id', (req, res) => {
     const { client_id } = req.params;
 

@@ -5,22 +5,22 @@ const webSocket = (wss, clients) => {
     ws.on('message', (message) => {
       try {
         const parsedMessage = JSON.parse(message.toString());
-        const clientId = parsedMessage.clientId; // Assuming the client sends { "clientId": "someId" }
+        const userId = parsedMessage.userId; // Assuming the client sends { "userId": "someId" }
         console.log(`Received initial message from client: ${message}`);
 
-        if (clientId) {
-          clients.add({ ws, clientId });
-          console.log(`Client associated with ID: ${clientId}`);
+        if (userId) {
+          clients.add({ ws, userId });
+          console.log(`Client associated with ID: ${userId}`);
 
           // Remove the listener for the initial ID message, so subsequent messages are treated as data
           ws.off('message', arguments.callee);
 
-          ws.send(JSON.stringify({ message: `Welcome, client ${clientId}!` }));
+          ws.send(JSON.stringify({ message: `Welcome, client ${userId}!` }));
 
           // Now handle regular data messages from the client
           ws.on('message', (data) => {
             console.log(
-              `Received data from client ${clientId}: ${data.toString()}`
+              `Received data from client ${userId}: ${data.toString()}`
             );
             // const parsedMessage = JSON.parse(data.toString());
             // if (parsedMessage.action === 'getData' && parsedMessage.client_id) {
@@ -47,7 +47,7 @@ const webSocket = (wss, clients) => {
             // }
           });
         } else {
-          console.log('Client did not send clientId in the first message.');
+          console.log('Client did not send userId in the first message.');
           ws.close();
         }
       } catch (error) {
