@@ -10,10 +10,10 @@ const plantsRoutes = (app) => {
     const device_id = req.headers['device-id'];
     const user_id = req.headers['user-id'];
 
-    const plantObject = Plant.fromObject(
-      device_id,
-      rawDataFromDevice.plant_name
-    );
+    const plantObject = Plant.fromObject({
+      device_id: device_id,
+      plant_name: rawDataFromDevice.plant_name,
+    });
 
     console.log('Received data : ', JSON.stringify(plantObject));
 

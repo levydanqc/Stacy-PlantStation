@@ -1,36 +1,6 @@
+from time import sleep
 import requests
 
-def sending_weather_data():
-    url = "http://127.0.0.1:3001/weather"
-
-    data = {
-    "deviceId": "00:1A:2B:3C:4D:5E",
-    "temperature": 20.5,
-    "moisture": 45.0,
-    "humidity": 60.2,
-    "pressure": 1013.25,
-    "hic" : 21.7,
-    "batteryVoltage": 3.7,
-    "batteryPercentage": 85,
-    }
-    
-    try:
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": "Bearer BEARER_TOKEN",
-            "Device-ID" : "01:01:01:01:01",
-            "User-ID" : "1"
-        }
-        
-        response = requests.post(url, json=data, headers=headers)
-
-        if response.status_code == 200:
-            print("Data sent successfully:", response.json())
-        else:
-            print(f"Failed to send data. Status code: {response.status_code}, Response: {response.text}")
-    except Exception as e:
-        print("An error occurred:", e)
-    
 def createUser():
     url = "http://127.0.0.1:3001/users"
     data = {
@@ -53,25 +23,58 @@ def createUser():
         print("An error occurred:", e)
 
 def createPlant():
-    url = "http://127.0.0.1:3001/devices"
+    url = "http://127.0.0.1:3001/plants"
     headers = {
             "Content-Type": "application/json",
             "Authorization": "Bearer BEARER_TOKEN",
             "Device-ID" : "01:01:01:01:01",
             "User-ID" : "1"
     }
+    data = {
+        "plant_name": "mint"
+    }
 
     try:
-        response = requests.post(url, headers=headers)
+        response = requests.post(url, json=data, headers=headers)
         if response.status_code == 200:
             print("Data sent successfully:", response.json())
         else:
             print(f"Failed to send data. Status code: {response.status_code}, Response: {response.text}")
     except Exception as e:
         print("An error occurred:", e)
+  
+def createSensorData():
+    url = "http://127.0.0.1:3001/weather"
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer BEARER_TOKEN",
+        "Device-ID" : "01:01:01:01:01",
+        "User-ID" : "1"
+    }
+    data = {
+        "temperature": 20.5,
+        "moisture": 45.0,
+        "humidity": 60.2,
+        "pressure": 1013.25,
+        "hic" : 21.7,
+        "batteryVoltage": 3.7,
+        "batteryPercentage": 85,
+    }
     
+    try:        
+        response = requests.post(url, json=data, headers=headers)
+
+        if response.status_code == 200:
+            print("Data sent successfully:", response.json())
+        else:
+            print(f"Failed to send data. Status code: {response.status_code}, Response: {response.text}")
+    except Exception as e:
+        print("An error occurred:", e)
+  
 
 if __name__ == "__main__":
-    # sending_weather_data()
     # createUser()
-    createPlant()
+    # sleep(1)
+    # createPlant()
+    # sleep(1)
+    createSensorData()

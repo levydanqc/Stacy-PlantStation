@@ -5,7 +5,8 @@ const broadcast = function (clients, data, user_id) {
     return;
   }
 
-  clients.forEach((id, client) => {
+  clients.forEach(({ ws: client, userId: id }) => {
+    console.log(`Client ID: ${id}`);
     if (client.readyState === WebSocket.OPEN && user_id === id) {
       try {
         client.send(data);
@@ -17,9 +18,6 @@ const broadcast = function (clients, data, user_id) {
         );
         clients.delete(client);
       }
-    } else {
-      clients.delete(client);
-      console.log('Removed stale client connection during broadcast.');
     }
   });
 };

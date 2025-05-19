@@ -9,6 +9,9 @@ class Plant {
    */
   constructor(device_id, plant_name) {
     // TODO : implement logic to validate mac address
+    console.log('device id : ', device_id);
+    console.log('typeoff device id : ', typeof device_id);
+
     if (typeof device_id !== 'string' || device_id.length == 0) {
       throw new Error(
         'Invalid or missing device_id: must be a valid MAC address.'

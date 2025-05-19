@@ -13,6 +13,7 @@ const weatherRoutes = (app, clients) => {
     const user_id = req.headers['user-id'];
 
     console.log('Received data from device: ', device_id);
+    console.log('Received data from user: ', user_id);
 
     if (!device_id || device_id.length === 0) {
       console.warn('Unauthorized: No Device-ID provided');
@@ -31,28 +32,20 @@ const weatherRoutes = (app, clients) => {
       const sensorDataObject = SensorData.fromObject(rawDataFromDevice);
 
       // Get a plain object for database and broadcasting
-      const dataToStoreAndBroadcast = sensorDataObject.toObject();
-
-      console.log(
-        `Data received from device_id "${device_id}":`,
-        JSON.stringify(dataToStoreAndBroadcast)
-      );
+      const sensorData = sensorDataObject.toObject();
 
       database
-        .saveDataToDatabase(dataToStoreAndBroadcast, device_id, user_id)
+        .storeSensorData(sensorData, device_id, user_id)
         .then(() => {
-          console.log(
-            `Data for device_id "${device_id}" saved to database successfully.`
-          );
           // Broadcast the new data to all connected WebSocket clients
           broadcast(
             clients,
-            JSON.stringify({ type: 'update', ...dataToStoreAndBroadcast }),
+            JSON.stringify({ type: 'update', ...sensorData }),
             user_id
           );
           return res
             .status(200)
-            .send({ message: 'Data received and stored successfully' });
+            .send({ message: 'Data stored and broadcast successfully' });
         })
         .catch((error) => {
           console.error(
@@ -69,26 +62,6 @@ const weatherRoutes = (app, clients) => {
         .status(400)
         .send({ message: `Invalid sensor data: ${error.message}` });
     }
-  });
-
-  app.get('/weather/:client_id', (req, res) => {
-    const { client_id } = req.params;
-
-    database
-      .getDataByClient(client_id)
-      .then((data) => {
-        if (data && data.length > 0) {
-          res.status(200).json(data);
-        } else {
-          res
-            .status(404)
-            .json({ message: `No data found for client_id: ${client_id}` });
-        }
-      })
-      .catch((err) => {
-        console.error(`Error fetching data for client_id ${client_id}:`, err);
-        res.status(500).json({ message: 'Error fetching data from database' });
-      });
   });
 };
 

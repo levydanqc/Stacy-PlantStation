@@ -3,6 +3,7 @@ const path = require('path');
 const User = require('../models/User');
 const sql = require('../sql/sql');
 const sqlInitialize = require('../sql/createTable.js');
+const SensorData = require('../models/sensorData.js');
 
 const dbPath = path.resolve(__dirname, '../plant_station.db');
 
@@ -53,11 +54,6 @@ async function initializeDatabase() {
       )
     );
     await new Promise((resolve, reject) =>
-      db.exec(sqlInitialize.createDevicesTable, (err) =>
-        err ? reject(err) : resolve()
-      )
-    );
-    await new Promise((resolve, reject) =>
       db.exec(sqlInitialize.createSensorDataTable, (err) =>
         err ? reject(err) : resolve()
       )
@@ -75,11 +71,11 @@ async function initializeDatabase() {
 
 /**
  * Saves weather data to the database.
- * @param {object} weatherData - The weather data object (SensorData)
+ * @param {SensorData} weatherData - The weather data object (SensorData)
  * @param {string} device_id - The ID of the device (MAC address).
  * @returns {Promise<void>} A promise that resolves when data is saved, or rejects on error.
  */
-function saveDataToDatabase(weatherData, device_id, user_id) {
+function storeSensorData(weatherData, device_id, user_id) {
   // TODO : Revise logic and data
   return new Promise((resolve, reject) => {
     const {
@@ -96,51 +92,59 @@ function saveDataToDatabase(weatherData, device_id, user_id) {
       console.error('Error: device_id is missing in weatherData');
       return reject(new Error('device_id is required'));
     }
+    if (!user_id) {
+      console.error('Error: user_id is missing in weatherData');
+      return reject(new Error('user_id is required'));
+    }
 
-    // The timestamp will be added automatically by the database (DEFAULT CURRENT_TIMESTAMP)
-    db.run(
-      sql.addSensorDataSQL,
-      [
-        temperature,
-        humidity,
-        moisture,
-        pressure,
-        hic,
-        batteryVoltage,
-        batteryPercentage,
-      ],
-      function (err) {
-        // Use function keyword to access `this.lastID`
-        if (err) {
-          console.error('Error inserting data into database:', err.message);
-          reject(err);
-        } else {
-          console.log(
-            `A row has been inserted with rowid ${this.lastID} for client_id: ${client_id}`
+    getPlantIdByUserIdAndDeviceId(user_id, device_id)
+      .then((plant_id) => {
+        if (!plant_id) {
+          console.error(
+            `Error: No plant_id found for device_id "${device_id}" and user_id "${user_id}"`
           );
-          resolve();
+          return reject(new Error('plant_id is required'));
         }
-      }
-    );
-  });
-}
 
-/**
- * Retrieves all weather data for a specific client.
- * @param {string} clientId - The ID of the client.
- * @returns {Promise<Array<object>>} A promise that resolves with an array of data rows.
- */
-function getDataByClient(clientId) {
-  // TODO : Revise logic and data
-  return new Promise((resolve, reject) => {
-    db.all(getAllDataFromClientIdSQL, [clientId], (err, rows) => {
-      if (err) {
-        console.error('Error fetching data by client_id:', err.message);
-        reject(err);
-      } else {
-        resolve(rows);
-      }
-    });
+        console.log(
+          `Obtained plant_id "${plant_id}" for device_id "${device_id}" and user_id "${user_id}"`
+        );
+
+        return new Promise((resolve, reject) => {
+          db.run(
+            sql.addSensorDataSQL,
+            [
+              plant_id,
+              temperature,
+              humidity,
+              moisture,
+              pressure,
+              hic,
+              batteryVoltage,
+              batteryPercentage,
+            ],
+            function (err) {
+              if (err) {
+                console.error(
+                  'Error inserting data into database:',
+                  err.message
+                );
+                reject(err);
+              } else {
+                console.log(
+                  `A row has been inserted with rowid ${this.lastID} for user_id: ${user_id}`
+                );
+                resolve();
+              }
+            }
+          );
+        });
+      })
+      .then(() => resolve())
+      .catch((error) => {
+        console.error('Error storing sensor data:', error);
+        reject(error);
+      });
   });
 }
 
@@ -168,12 +172,12 @@ function getClientIdByDeviceId(device_id) {
 function getPlantIdByUserIdAndDeviceId(user_id, device_id) {
   // TODO : Revise logic and data
   return new Promise((resolve, reject) => {
-    db.get(getPlantIdSQL, [user_id, device_id], (err, row) => {
+    db.get(sql.getPlantIdSQL, [user_id, device_id], (err, row) => {
       if (err) {
-        console.error('Error fetching client_id by device_id:', err.message);
+        console.error('Error fetching plant_id:', err.message);
         reject(err);
       } else if (row) {
-        resolve(row.client_id);
+        resolve(row.plant_id);
       } else {
         resolve(null);
       }
@@ -205,31 +209,12 @@ function createUser(user) {
   });
 }
 
-function createDevice(device_id, user_id) {
-  return new Promise((resolve, reject) => {
-    db.run(sql.addDeviceSQL, [device_id, user_id], function (err) {
-      if (err) {
-        console.error('Error inserting data into database:', err.message);
-        reject(err);
-      } else {
-        console.log('A row in user table has been inserted');
-        resolve();
-      }
-    });
-  });
-}
-
-/**
- * Saves a new Plant in the database.
- * @param {Plant} plant - The Plant data object.
- * @returns {Promise<string>} A promise that resolves with plant ID
- */
-function createPlant(plant) {
+function createPlant(plant, user_id) {
   // TODO : it needs to return the plant_id for the client
   return new Promise((resolve, reject) => {
     db.run(
       sql.addPlantSQL,
-      [plant.device_id, plant.plant_name],
+      [user_id, plant.device_id, plant.plant_name],
       function (err) {
         if (err) {
           console.error('Error inserting data into database:', err.message);
@@ -257,9 +242,9 @@ process.on('SIGINT', () => {
 
 module.exports = {
   connectDatabase,
-  saveDataToDatabase,
-  getDataByClient,
+  // getDataByClient,
+  storeSensorData,
   getClientIdByDeviceId,
   createUser,
-  createDevice,
+  createPlant,
 };
