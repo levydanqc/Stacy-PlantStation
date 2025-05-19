@@ -1,14 +1,21 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
-const User = require('../models/User');
+
 const sql = require('../sql/sql');
 const sqlInitialize = require('../sql/createTable.js');
+
+const User = require('../models/User');
 const SensorData = require('../models/sensorData.js');
 
 const dbPath = path.resolve(__dirname, '../plant_station.db');
 
 let db;
 
+/**
+ * Connects to the SQLite database.
+ * If the database file does not exist, it will be created.
+ * @returns {Promise<sqlite3.Database>} A promise that resolves with the database connection.
+ */
 function connectDatabase() {
   return new Promise((resolve, reject) => {
     db = new sqlite3.Database(dbPath, (err) => {
@@ -16,51 +23,42 @@ function connectDatabase() {
         console.error('Error connecting to database:', err.message);
         reject(err);
       } else {
-        db.get(
-          "SELECT name FROM sqlite_master WHERE type='table' LIMIT 1",
-          (err, row) => {
-            if (err) {
-              console.error('Error checking for existing tables:', err.message);
-              reject(err);
-              return;
-            }
-            if (!row) {
-              initializeDatabase().catch((error) => {
-                console.error('Error initializing database:', error);
-                reject(error);
-              });
-              console.log('Connected to a new SQLite database.');
-            } else {
-              console.log('Connected to an existing SQLite database.');
-            }
-            resolve(db);
+        db.get(sql.getTablesSQL, (err, row) => {
+          if (err) {
+            console.error('Error checking for existing tables:', err.message);
+            reject(err);
+            return;
           }
-        );
+          if (!row) {
+            initializeDatabase().catch((error) => {
+              console.error('Error initializing database:', error);
+              reject(error);
+            });
+            console.log('Connected to a new SQLite database.');
+          } else {
+            console.log('Connected to an existing SQLite database.');
+          }
+          resolve(db);
+        });
       }
     });
   });
 }
 
+/**
+ * Initializes the database by creating necessary tables.
+ * This function is called when the database is first created.
+ * @returns {Promise<void>} A promise that resolves when the database is initialized.
+ */
 async function initializeDatabase() {
   try {
     await new Promise((resolve, reject) =>
-      db.exec(sqlInitialize.createUsersTable, (err) =>
-        err ? reject(err) : resolve()
-      )
-    );
-    await new Promise((resolve, reject) =>
-      db.exec(sqlInitialize.createPlantsTable, (err) =>
-        err ? reject(err) : resolve()
-      )
-    );
-    await new Promise((resolve, reject) =>
-      db.exec(sqlInitialize.createSensorDataTable, (err) =>
-        err ? reject(err) : resolve()
-      )
-    );
-    await new Promise((resolve, reject) =>
-      db.exec(sqlInitialize.createIndex, (err) =>
-        err ? reject(err) : resolve()
+      db.exec(
+        sqlInitialize.createUsersTable +
+          sqlInitialize.createPlantsTable +
+          sqlInitialize.createSensorDataTable +
+          sqlInitialize.createIndex,
+        (err) => (err ? reject(err) : resolve())
       )
     );
     console.log('Database initialized successfully.');

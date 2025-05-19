@@ -5,7 +5,7 @@ const ip = require('ip');
 const dotenv = require('dotenv');
 dotenv.config();
 
-const PORT = 3001; // Or your preferred port
+const PORT = 3001;
 const ADDRESS = ip.address();
 
 const app = express();
@@ -16,8 +16,8 @@ const wss = new WebSocket.Server({ server });
 
 const clients = new Set();
 
-const routes = require('./routes/routes.js')(app, clients);
-const webSocket = require('./routes/websocket.js')(wss, clients);
+require('./routes/routes.js')(app, clients);
+require('./routes/websocket.js')(wss, clients);
 
 const database = require('./utilities/database.js');
 database.connectDatabase();

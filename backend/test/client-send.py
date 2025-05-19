@@ -76,8 +76,8 @@ def createSensorData():
   
 
 if __name__ == "__main__":
-    createUser()
+    # createUser()
     # sleep(1)
     # createPlant()
     # sleep(1)
-    # createSensorData()
+    createSensorData()
