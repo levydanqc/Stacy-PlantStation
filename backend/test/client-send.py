@@ -1,12 +1,15 @@
-from time import sleep
+from time import sleep, time
 import requests
 
 def createUser():
     url = "http://127.0.0.1:3001/users"
+    rand_username = "user" + str(int(time()))
+    rand_email = "email" + str(int(time())) + "@danlevy.ca"
+    rand_pwd = "passwd" + str(int(time()))
     data = {
-        "username": "levydanqc",
-        "email": "email@danlevy.ca",
-        "password_hash": "passwd"
+        "username": rand_username,
+        "email": rand_email,
+        "password_hash": rand_pwd
     }
     headers = {
             "Content-Type": "application/json",
@@ -52,13 +55,13 @@ def createSensorData():
         "User-ID" : "1"
     }
     data = {
-        "temperature": 20.5,
-        "moisture": 45.0,
-        "humidity": 60.2,
-        "pressure": 1013.25,
-        "hic" : 21.7,
-        "batteryVoltage": 3.7,
-        "batteryPercentage": 85,
+        "temperature": round(20.0 + (time() % 10), 2),
+        "moisture": round(40.0 + (time() % 20), 2),
+        "humidity": round(30.0 + (time() % 20), 2),
+        "pressure": round(1000.0 + (time() % 50), 2),
+        "hic" : round(20.0 + (time() % 10), 2),
+        "batteryVoltage": round(3.5 + (time() % 0.5), 2),
+        "batteryPercentage": round(80 + (time() % 20), 2)
     }
     
     try:        
@@ -73,8 +76,8 @@ def createSensorData():
   
 
 if __name__ == "__main__":
-    # createUser()
+    createUser()
     # sleep(1)
     # createPlant()
     # sleep(1)
-    createSensorData()
+    # createSensorData()
