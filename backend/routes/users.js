@@ -1,5 +1,6 @@
 const database = require('../utilities/database');
 const authenticateToken = require('../middleware/authenticateToken.js');
+
 const User = require('../models/User');
 
 const usersRoutes = (app) => {

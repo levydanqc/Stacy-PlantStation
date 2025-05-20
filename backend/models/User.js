@@ -12,11 +12,12 @@ class User {
     if (typeof username !== 'string' || username.length == 0) {
       throw new Error('Invalid or missing username: must be a string.');
     }
-    // TODO : implement logic to validate email
-    if (typeof email !== 'string' || email.length == 0) {
+    if (
+      typeof email !== 'string' ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+    ) {
       throw new Error('Invalid or missing email: must be a valid email.');
     }
-    // TODO : implement logic to validate password_hash
     if (typeof password_hash !== 'string' || password_hash.length == 0) {
       throw new Error('Invalid or missing password: must be a string.');
     }

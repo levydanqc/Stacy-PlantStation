@@ -29,15 +29,15 @@ const weatherRoutes = (app, clients) => {
 
     try {
       const sensorDataObject = SensorData.fromObject(rawDataFromDevice);
-
-      const sensorData = sensorDataObject.toObject();
+      // Make sure removing this does not break anything
+      // const cleanedSensorData = sensorDataObject.toObject();
 
       database
-        .storeSensorData(sensorData, device_id, user_id)
+        .storeSensorData(sensorDataObject, device_id, user_id)
         .then(() => {
           broadcast(
             clients,
-            JSON.stringify({ type: 'update', ...sensorData }),
+            JSON.stringify({ type: 'update', ...sensorDataObject }),
             user_id
           );
           return res

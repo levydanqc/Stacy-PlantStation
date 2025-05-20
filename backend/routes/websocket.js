@@ -7,7 +7,7 @@ const webSocket = (wss, clients) => {
     ws.on('message', (message) => {
       try {
         const parsedMessage = JSON.parse(message.toString());
-        const userId = parsedMessage.userId; // Assuming the client sends { "userId": "someId" }
+        const userId = parsedMessage.userId;
         console.log(`Received initial message from client: ${message}`);
 
         if (userId) {
