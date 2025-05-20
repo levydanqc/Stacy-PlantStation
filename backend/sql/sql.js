@@ -15,13 +15,23 @@ const addPlantSQL = `
 INSERT INTO plants (user_id, device_id, plant_name) VALUES (?, ?, ?);
 `;
 
-const getPlantIdSQL = `
+const getPlantIdFromUserIdAndDeviceIdSQL = `
 SELECT plant_id FROM plants WHERE user_id = ? AND device_id = ?;
+`;
+
+const getPlantIdFromUserIdSQL = `
+SELECT plant_id FROM plants WHERE user_id = ?;
+`;
+
+const getDataByPlantIdSQL = `
+SELECT * FROM sensor_data WHERE plant_id = ? ORDER BY timestamp DESC LIMIT 100;
 `;
 
 module.exports = {
   addSensorDataSQL,
-  getPlantIdSQL,
+  getPlantIdFromUserIdAndDeviceIdSQL,
+  getPlantIdFromUserIdSQL,
+  getDataByPlantIdSQL,
   addUserSQL,
   addPlantSQL,
   getTablesSQL,

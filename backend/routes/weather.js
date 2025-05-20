@@ -6,7 +6,6 @@ const authenticateToken = require('../middleware/authenticateToken.js');
 const weatherRoutes = (app, clients) => {
   app.use('/weather', authenticateToken);
 
-  // HTTP Endpoint for ESP32 to send data
   app.post('/weather', (req, res) => {
     const rawDataFromDevice = req.body;
     const device_id = req.headers['device-id'];
@@ -31,13 +30,11 @@ const weatherRoutes = (app, clients) => {
     try {
       const sensorDataObject = SensorData.fromObject(rawDataFromDevice);
 
-      // Get a plain object for database and broadcasting
       const sensorData = sensorDataObject.toObject();
 
       database
         .storeSensorData(sensorData, device_id, user_id)
         .then(() => {
-          // Broadcast the new data to all connected WebSocket clients
           broadcast(
             clients,
             JSON.stringify({ type: 'update', ...sensorData }),

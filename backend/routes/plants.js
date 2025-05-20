@@ -19,12 +19,12 @@ const plantsRoutes = (app) => {
 
     database
       .createPlant(plantObject, user_id)
-      .then(() => {
-        console.log('Created plant');
+      .then((plant_id) => {
+        console.log('Created plant with ID:', plant_id);
 
         return res
           .status(200)
-          .send({ message: 'Data received and stored successfully' });
+          .send({ message: 'Plant created successfully', plant_id: plant_id });
       })
       .catch((error) => {
         console.error(

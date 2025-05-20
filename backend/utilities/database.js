@@ -74,7 +74,6 @@ async function initializeDatabase() {
  * @returns {Promise<void>} A promise that resolves when data is saved, or rejects on error.
  */
 function storeSensorData(weatherData, device_id, user_id) {
-  // TODO : Revise logic and data
   return new Promise((resolve, reject) => {
     const {
       temperature,
@@ -147,46 +146,34 @@ function storeSensorData(weatherData, device_id, user_id) {
 }
 
 /**
- * Retrieves the client ID associated with a given device ID.
+ * Retrieves the plant ID associated with a given user ID and device ID.
+ * @param {string} user_id - The ID of the user.
  * @param {string} device_id - The ID of the device (MAC address).
- * @returns {Promise<string>} A promise that resolves with the client ID.
+ * @returns {Promise<string>} A promise that resolves with the plant ID.
  */
-function getClientIdByDeviceId(device_id) {
-  // TODO : Revise logic and data
-  return new Promise((resolve, reject) => {
-    db.get(selectIdFromDeviceID, [device_id], (err, row) => {
-      if (err) {
-        console.error('Error fetching client_id by device_id:', err.message);
-        reject(err);
-      } else if (row) {
-        resolve(row.client_id);
-      } else {
-        resolve(null);
-      }
-    });
-  });
-}
-
 function getPlantIdByUserIdAndDeviceId(user_id, device_id) {
-  // TODO : Revise logic and data
   return new Promise((resolve, reject) => {
-    db.get(sql.getPlantIdSQL, [user_id, device_id], (err, row) => {
-      if (err) {
-        console.error('Error fetching plant_id:', err.message);
-        reject(err);
-      } else if (row) {
-        resolve(row.plant_id);
-      } else {
-        resolve(null);
+    db.get(
+      sql.getPlantIdFromUserIdAndDeviceIdSQL,
+      [user_id, device_id],
+      (err, row) => {
+        if (err) {
+          console.error('Error fetching plant_id:', err.message);
+          reject(err);
+        } else if (row) {
+          resolve(row.plant_id);
+        } else {
+          resolve(null);
+        }
       }
-    });
+    );
   });
 }
 
 /**
- * Saves a new User in the database.
- * @param {User} user - The User data object.
- * @returns {Promise<string>} A promise that resolves with the user ID.
+ * Creates a new user in the database.
+ * @param {User} user - The user object containing username, email, and password_hash.
+ * @return {Promise<void>} A promise that resolves when the user is created, or rejects on error.
  */
 function createUser(user) {
   // TODO : it needs to return the user_id for the client
@@ -207,8 +194,13 @@ function createUser(user) {
   });
 }
 
+/**
+ * Creates a new plant in the database.
+ * @param {Object} plant - The plant object containing device_id and plant_name.
+ * @param {string} user_id - The ID of the user.
+ * @return {Promise<number>} A promise that resolves with the plant ID, or rejects on error.
+ */
 function createPlant(plant, user_id) {
-  // TODO : it needs to return the plant_id for the client
   return new Promise((resolve, reject) => {
     db.run(
       sql.addPlantSQL,
@@ -219,15 +211,66 @@ function createPlant(plant, user_id) {
           reject(err);
         } else {
           console.log('A row in plant table has been inserted');
-          resolve();
+          resolve(this.lastID);
         }
       }
     );
   });
 }
 
-// Close the database connection when the application exits
-// This is important for graceful shutdowns
+function getDataByUserId(user_id) {
+  return new Promise((resolve, reject) => {
+    db.all(sql.getPlantIdFromUserIdSQL, [user_id], (err, rows) => {
+      if (err) {
+        console.error('Error fetching plant IDs:', err.message);
+        reject(err);
+      } else {
+        const plantIds = rows.map((row) => row.plant_id);
+        console.log('Plant IDs:', plantIds);
+
+        const promises = plantIds.map((plantId) => getDataByPlantId(plantId));
+
+        Promise.all(promises)
+          .then((results) => {
+            const allData = results.flat();
+            resolve(allData);
+          })
+          .catch((error) => {
+            console.error('Error fetching data by plant ID:', error);
+            reject(error);
+          });
+      }
+    });
+  });
+}
+
+/**
+ * Retrieves sensor data for a specific plant ID.
+ * @param {number} plant_id - The ID of the plant.
+ * @return {Promise<Array>} A promise that resolves with an array of sensor data.
+ */
+function getDataByPlantId(plant_id) {
+  return new Promise((resolve, reject) => {
+    db.all(sql.getDataByPlantIdSQL, [plant_id], (err, rows) => {
+      if (err) {
+        console.error('Error fetching sensor data:', err.message);
+        reject(err);
+      } else {
+        const sensorData = rows.map((row) => ({
+          temperature: row.temperature,
+          humidity: row.humidity,
+          moisture: row.moisture,
+          pressure: row.pressure,
+          hic: row.hic,
+          batteryVoltage: row.batteryVoltage,
+          batteryPercentage: row.batteryPercentage,
+        }));
+        resolve(sensorData);
+      }
+    });
+  });
+}
+
 process.on('SIGINT', () => {
   db.close((err) => {
     if (err) {
@@ -240,9 +283,8 @@ process.on('SIGINT', () => {
 
 module.exports = {
   connectDatabase,
-  // getDataByClient,
+  getDataByUserId,
   storeSensorData,
-  getClientIdByDeviceId,
   createUser,
   createPlant,
 };

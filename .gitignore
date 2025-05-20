@@ -3,4 +3,4 @@
 
 **/.env
 backend/node_modules
-
+backend/*.db

@@ -30,11 +30,11 @@ def createPlant():
     headers = {
             "Content-Type": "application/json",
             "Authorization": "Bearer BEARER_TOKEN",
-            "Device-ID" : "01:01:01:01:01",
+            "Device-ID" : "02:02:02:02:02",
             "User-ID" : "1"
     }
     data = {
-        "plant_name": "mint"
+        "plant_name": "aloe"
     }
 
     try:
@@ -51,7 +51,7 @@ def createSensorData():
     headers = {
         "Content-Type": "application/json",
         "Authorization": "Bearer BEARER_TOKEN",
-        "Device-ID" : "01:01:01:01:01",
+        "Device-ID" : "02:02:02:02:02",
         "User-ID" : "1"
     }
     data = {

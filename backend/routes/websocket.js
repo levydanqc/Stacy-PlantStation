@@ -1,3 +1,5 @@
+const database = require('../utilities/database.js');
+
 const webSocket = (wss, clients) => {
   wss.on('connection', (ws) => {
     console.log('Client connected via WebSocket');
@@ -12,39 +14,23 @@ const webSocket = (wss, clients) => {
           clients.add({ ws, userId });
           console.log(`Client associated with ID: ${userId}`);
 
-          // Remove the listener for the initial ID message, so subsequent messages are treated as data
           ws.off('message', arguments.callee);
 
           ws.send(JSON.stringify({ message: `Welcome, client ${userId}!` }));
 
-          // Now handle regular data messages from the client
+          database
+            .getDataByUserId(userId)
+            .then((sensorData) => {
+              ws.send(JSON.stringify(sensorData));
+            })
+            .catch((error) => {
+              console.error(`Error fetching data for user ${userId}:`, error);
+            });
+
           ws.on('message', (data) => {
             console.log(
               `Received data from client ${userId}: ${data.toString()}`
             );
-            // const parsedMessage = JSON.parse(data.toString());
-            // if (parsedMessage.action === 'getData' && parsedMessage.client_id) {
-            //   database
-            //     .getDataByClient(parsedMessage.client_id)
-            //     .then((data) => {
-            //       ws.send(
-            //         JSON.stringify({
-            //           type: 'historicalData',
-            //           client_id: parsedMessage.client_id,
-            //           data: data,
-            //         })
-            //       );
-            //     })
-            //     .catch((err) => {
-            //       console.error('Error fetching historical data:', err);
-            //       ws.send(
-            //         JSON.stringify({
-            //           type: 'error',
-            //           message: 'Could not fetch historical data.',
-            //         })
-            //       );
-            //     });
-            // }
           });
         } else {
           console.log('Client did not send userId in the first message.');
