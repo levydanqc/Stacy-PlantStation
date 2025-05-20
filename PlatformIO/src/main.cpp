@@ -7,6 +7,7 @@
 #include <HTTPClient.h>
 #include <SPI.h>
 #include <WiFi.h>
+#include <esp_wifi.h>
 
 DHT dht(4, DHT11);
 
@@ -16,6 +17,7 @@ void sendDataToServer(SensorData sensorData);
 SensorData readSensors();
 void goToDeepSleep();
 void powerOn();
+String getMacAddress();
 
 // --- Setup Function (runs once on boot/wake) ---
 void setup() {
@@ -85,6 +87,9 @@ SensorData readSensors() {
   sensorData.humidity = dht.readHumidity();
   sensorData.hic =
       dht.computeHeatIndex(sensorData.temperature, sensorData.humidity, false);
+  
+  // TODO : add moisture
+  sensorData.moisture = 0.0;
 
   DEBUG("Temperature: ");
   DEBUG(sensorData.temperature);
@@ -93,6 +98,9 @@ SensorData readSensors() {
   DEBUG(" %, HIC: ");
   DEBUG(sensorData.hic);
   DEBUGLN(" °C");
+  DEBUG("Moisture: ");
+  DEBUG(sensorData.moisture);
+  DEBUGLN(" %");
 
   return sensorData;
 }
@@ -113,14 +121,17 @@ void sendDataToServer(SensorData sensorData) {
 
     // Begin HTTP connection
     if (http.begin(client, SERVER_URL)) {
-      // Set headers
       http.addHeader("Content-Type", "application/json");
-      http.addHeader("Authorization", "API_KEY");
+      http.addHeader("Authorization", "Bearer " + String(AUTH_TOKEN));
+      http.addHeader("Device-ID", getMacAddress);
 
       String jsonPayload =
           "{\"temperature\":" + String(sensorData.temperature) +
           ",\"humidity\":" + String(sensorData.humidity) +
-          ",\"hic\":" + String(sensorData.hic) + "}";
+          ",\"hic\":" + String(sensorData.hic) + "}" + 
+          ",\"moisture\":" + String(sensorData.moisture)
+          ",\"batteryVoltage\":" + String(sensorData.batteryVoltage) +
+          ",\"batteryPercentage\":" + String(sensorData.batteryPercentage) + "\"}";
 
       DEBUG("Sending JSON payload: ");
       DEBUGLN(jsonPayload);
@@ -171,4 +182,26 @@ void goToDeepSleep() {
 
   esp_deep_sleep_start();
   // Code execution stops here until the ESP32 wakes up
+}
+
+/**
+ * @brief Reads the MAC address of the ESP32 and prints it to the Serial Monitor.
+ * @return The MAC address as a String.
+ */
+String getMacAddress(){
+  uint8_t baseMac[6];
+  esp_err_t ret = esp_wifi_get_mac(WIFI_IF_STA, baseMac);
+  if (ret == ESP_OK) {
+    String macAddress = String(baseMac[0], HEX) + ":" +
+                  String(baseMac[1], HEX) + ":" +
+                  String(baseMac[2], HEX) + ":" +
+                  String(baseMac[3], HEX) + ":" +
+                  String(baseMac[4], HEX) + ":" +
+                  String(baseMac[5], HEX);
+    macAddress.toUpperCase();
+    DEBUGLN("MAC Address: " + macAddress);
+    return macAddress;
+  } else {
+    DEBUGLN("Failed to read MAC address");
+  }
 }
