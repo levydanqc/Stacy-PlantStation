@@ -1,5 +1,5 @@
 /**
- * Represents a User account
+ * User class representing a user in the system.
  */
 class User {
   /**
