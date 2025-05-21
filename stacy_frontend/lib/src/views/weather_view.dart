@@ -2,7 +2,9 @@ import 'dart:convert'; // For jsonDecode
 
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:web_socket_channel/web_socket_channel.dart'; // For WebSocket communication
+import 'package:web_socket_channel/web_socket_channel.dart';
+
+import '../utilities/logger.dart' show log;
 
 class WeatherDisplay extends StatefulWidget {
   const WeatherDisplay({super.key});
@@ -14,15 +16,12 @@ class WeatherDisplay extends StatefulWidget {
 }
 
 class _WeatherDisplayState extends State<WeatherDisplay> {
-  // IMPORTANT: Replace '<YOUR_SERVER_IP>' with the actual local IP address
-  // of the machine running your Node.js server.
-  // The port should match the HTTP_PORT in your server.js (e.g., 8080).
-  final String _webSocketUrl =
-      dotenv.env['WEBSOCKET_URL'] ?? 'ws://<YOUR_SERVER_IP>:8080';
+  final String _webSocketUrl = dotenv.env['WEBSOCKET_URL']!;
 
-  WebSocketChannel? _channel; // Make channel nullable
-  Map<String, dynamic> _weatherData = {}; // Store latest weather data
-  String _connectionStatus = "Connecting..."; // Display connection status
+  List<Map<String, dynamic>> _weatherData = [];
+
+  WebSocketChannel? _channel;
+  String _connectionStatus = "Connecting...";
   bool _isConnected = false;
 
   @override
@@ -35,11 +34,10 @@ class _WeatherDisplayState extends State<WeatherDisplay> {
     setState(() {
       _connectionStatus = "Connecting...";
       _isConnected = false;
-      _weatherData = {}; // Clear old data on reconnect attempt
+      _weatherData = [];
     });
 
     try {
-      // Close existing channel if any before creating a new one
       _channel?.sink.close();
 
       // Establish the WebSocket connection
@@ -49,40 +47,45 @@ class _WeatherDisplayState extends State<WeatherDisplay> {
       setState(() {
         _connectionStatus = "Connected";
       });
-      print("WebSocket connection established to $_webSocketUrl");
+      log.info("WebSocket connection established to $_webSocketUrl");
+
+      // TODO: Change this to the userId you want to send
+      _channel!.sink.add("{\"userId\": \"1\"}");
 
       // Listen for incoming messages from the server
       _channel!.stream.listen(
         (message) {
-          print("Received from WebSocket: $message");
+          log.info("Received from WebSocket: $message");
           if (mounted) {
-            // Check if the widget is still in the tree
             try {
-              // Assuming server sends data as a JSON string
               final data = jsonDecode(message);
-              if (data is Map<String, dynamic>) {
+              if (data is List) {
+                // If the data is a list, update the weatherData
                 setState(() {
-                  _weatherData = data;
-                  // Update status only if it changed
-                  if (!_isConnected || _connectionStatus != "Connected") {
-                    _connectionStatus = "Connected";
-                    _isConnected = true;
-                  }
+                  _weatherData = List<Map<String, dynamic>>.from(data);
+                  _connectionStatus = "Data Received";
                 });
+              } else if (data is Map && data['type'] == 'update') {
+                setState(() {
+                  // add to the existing weatherData and update temp and humidity
+                  _weatherData.add(Map<String, dynamic>.from(data));
+                  _weatherData[0]['temperature'] = data['temperature'];
+                  _weatherData[0]['humidity'] = data['humidity'];
+                  _connectionStatus = "Data Received";
+                });
+              } else if (data is String) {
+                log.warning("Received string data: $data");
               } else {
-                print("Received non-map JSON data: $data");
+                log.warning("Expected a list but got: ${data.runtimeType}");
+                log.warning("Unexpected data format: $data");
               }
             } catch (e) {
-              print("Error decoding JSON: $e");
-              // Optionally update status to show data format error
-              // setState(() {
-              //   _connectionStatus = "Data Error";
-              // });
+              log.warning("Error decoding JSON: $e");
             }
           }
         },
         onError: (error) {
-          print("WebSocket Error: $error");
+          log.warning("WebSocket Error: $error");
           if (mounted) {
             setState(() {
               _connectionStatus = "Error: ${error.toString()}";
@@ -93,7 +96,7 @@ class _WeatherDisplayState extends State<WeatherDisplay> {
           }
         },
         onDone: () {
-          print("WebSocket connection closed");
+          log.info("WebSocket connection closed");
           if (mounted) {
             setState(() {
               _connectionStatus = "Disconnected";
@@ -106,7 +109,7 @@ class _WeatherDisplayState extends State<WeatherDisplay> {
         cancelOnError: true, // Automatically cancels subscription on error
       );
     } catch (e) {
-      print("Failed to connect WebSocket: $e");
+      log.severe("Failed to connect WebSocket: $e");
       if (mounted) {
         setState(() {
           _connectionStatus = "Connection Failed";
@@ -119,11 +122,11 @@ class _WeatherDisplayState extends State<WeatherDisplay> {
 
   void _scheduleReconnect() {
     if (!mounted) return; // Don't schedule if widget is disposed
-    print("Scheduling reconnection in 5 seconds...");
+    log.info("Scheduling reconnection in 5 seconds...");
     Future.delayed(Duration(seconds: 5), () {
       if (mounted && !_isConnected) {
         // Check again if mounted and not connected
-        print("Attempting to reconnect...");
+        log.info("Attempting to reconnect...");
         _connectWebSocket();
       }
     });
@@ -132,8 +135,14 @@ class _WeatherDisplayState extends State<WeatherDisplay> {
   @override
   Widget build(BuildContext context) {
     // Get temperature and humidity, providing default values if null
-    final temperature = _weatherData['temperature']?.toStringAsFixed(2) ?? '--';
-    final humidity = _weatherData['humidity']?.toStringAsFixed(2) ?? '--';
+    final temperature =
+        _weatherData.isNotEmpty && _weatherData[0]['temperature'] != null
+            ? _weatherData[0]['temperature'].toStringAsFixed(2)
+            : '--';
+    final humidity =
+        _weatherData.isNotEmpty && _weatherData[0]['humidity'] != null
+            ? _weatherData[0]['humidity'].toStringAsFixed(2)
+            : '--';
 
     return Scaffold(
       appBar: AppBar(
@@ -231,7 +240,7 @@ class _WeatherDisplayState extends State<WeatherDisplay> {
 
   @override
   void dispose() {
-    print("Closing WebSocket connection.");
+    log.info("Closing WebSocket connection.");
     _channel?.sink
         .close(); // Close the WebSocket connection when the widget is disposed
     super.dispose();

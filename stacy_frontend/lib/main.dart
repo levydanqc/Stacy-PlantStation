@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:stacy_frontend/src/utilities/logger.dart';
 
 import 'src/app.dart';
 import 'src/settings/settings_controller.dart';
@@ -7,6 +8,7 @@ import 'src/settings/settings_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  setupLogging();
   try {
     await dotenv.load(fileName: ".env"); // Load environment variables
   } catch (e) {
