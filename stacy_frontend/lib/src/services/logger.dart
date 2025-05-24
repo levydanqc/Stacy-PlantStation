@@ -5,7 +5,7 @@ import 'package:logging/logging.dart';
 final log = Logger('StacyLogger');
 final logLevel = Level.ALL;
 
-void setupLogging() {
+void setupLogger() {
   Logger.root.level = logLevel;
   Logger.root.onRecord.listen((LogRecord rec) {
     final String message = '${rec.level.name}: ${rec.message}';

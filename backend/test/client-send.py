@@ -2,14 +2,14 @@ from time import sleep, time
 import requests
 
 def createUser():
-    url = "http://127.0.0.1:3001/users"
+    url = "http://192.168.45.162:3001/users"
     rand_username = "user" + str(int(time()))
     rand_email = "email" + str(int(time())) + "@danlevy.ca"
     rand_pwd = "passwd" + str(int(time()))
     data = {
         "username": rand_username,
         "email": rand_email,
-        "password_hash": rand_pwd
+        "password": rand_pwd
     }
     headers = {
             "Content-Type": "application/json",
@@ -76,8 +76,8 @@ def createSensorData():
   
 
 if __name__ == "__main__":
-    # createUser()
+    createUser()
     # sleep(1)
     # createPlant()
     # sleep(1)
-    createSensorData()
+    # createSensorData()

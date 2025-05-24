@@ -8,7 +8,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?);
 `;
 
 const addUserSQL = `
-INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?);
+INSERT INTO users (username, email, password) VALUES (?, ?, ?);
 `;
 
 const addPlantSQL = `
@@ -27,6 +27,14 @@ const getDataByPlantIdSQL = `
 SELECT * FROM sensor_data WHERE plant_id = ? ORDER BY timestamp DESC LIMIT 100;
 `;
 
+const getUserByEmailSQL = `
+SELECT * FROM users WHERE email = ?;
+`;
+
+const getUserPasswordSQL = `
+SELECT password FROM users WHERE user_id = ?;
+`;
+
 module.exports = {
   addSensorDataSQL,
   getPlantIdFromUserIdAndDeviceIdSQL,
@@ -35,4 +43,6 @@ module.exports = {
   addUserSQL,
   addPlantSQL,
   getTablesSQL,
+  getUserByEmailSQL,
+  getUserPasswordSQL,
 };

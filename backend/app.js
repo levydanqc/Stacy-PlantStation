@@ -1,7 +1,9 @@
 const express = require('express');
+const cors = require('cors');
 const http = require('http');
 const WebSocket = require('ws');
 const ip = require('ip');
+
 const dotenv = require('dotenv');
 dotenv.config();
 
@@ -10,6 +12,7 @@ const ADDRESS = ip.address();
 
 const app = express();
 app.use(express.json());
+app.use(cors({ exposedHeaders: 'auth_token' }));
 
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });

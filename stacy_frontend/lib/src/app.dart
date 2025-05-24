@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
-// import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:responsive_builder/responsive_builder.dart';
 import 'package:stacy_frontend/src/localization/app_localizations.dart';
+import 'package:stacy_frontend/src/services/router.dart';
 
-import 'sample_feature/sample_item_details_view.dart';
-import 'sample_feature/sample_item_list_view.dart';
 import 'settings/settings_controller.dart';
-import 'settings/settings_view.dart';
-import 'views/weather_view.dart';
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({
     super.key,
     required this.settingsController,
@@ -18,46 +16,36 @@ class MyApp extends StatelessWidget {
   final SettingsController settingsController;
 
   @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: settingsController,
-      builder: (BuildContext context, Widget? child) {
-        return MaterialApp(
-          restorationScopeId: 'app',
-          localizationsDelegates: const [
-            AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          supportedLocales: const [
-            Locale('en', ''), // English, no country code
-          ],
-          onGenerateTitle: (BuildContext context) =>
-              AppLocalizations.of(context)!.appTitle,
-          theme: ThemeData(),
-          darkTheme: ThemeData.dark(),
-          themeMode: settingsController.themeMode,
-          onGenerateRoute: (RouteSettings routeSettings) {
-            return MaterialPageRoute<void>(
-              settings: routeSettings,
-              builder: (BuildContext context) {
-                switch (routeSettings.name) {
-                  case SettingsView.routeName:
-                    return SettingsView(controller: settingsController);
-                  case SampleItemDetailsView.routeName:
-                    return const SampleItemDetailsView();
-                  case WeatherDisplay.routeName:
-                    return const WeatherDisplay();
-                  case SampleItemListView.routeName:
-                  default:
-                    return const SampleItemListView();
-                }
-              },
+    return ResponsiveApp(
+      builder: (context) => ListenableBuilder(
+          listenable: widget.settingsController,
+          builder: (BuildContext context, Widget? child) {
+            return MaterialApp.router(
+              debugShowCheckedModeBanner: false,
+              restorationScopeId: 'app',
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              supportedLocales: const [
+                Locale('en', ''), // English, no country code
+              ],
+              onGenerateTitle: (BuildContext context) =>
+                  AppLocalizations.of(context)!.appTitle,
+              theme: ThemeData(),
+              darkTheme: ThemeData.dark(),
+              themeMode: widget.settingsController.themeMode,
+              routerConfig: router,
             );
-          },
-        );
-      },
+          }),
     );
   }
 }

@@ -172,7 +172,7 @@ function getPlantIdByUserIdAndDeviceId(user_id, device_id) {
 
 /**
  * Creates a new user in the database.
- * @param {User} user - The user object containing username, email, and password_hash.
+ * @param {User} user - The user object containing username, email, and password.
  * @return {Promise<void>} A promise that resolves when the user is created, or rejects on error.
  */
 function createUser(user) {
@@ -180,14 +180,14 @@ function createUser(user) {
   return new Promise((resolve, reject) => {
     db.run(
       sql.addUserSQL,
-      [user.username, user.email, user.password_hash],
+      [user.username, user.email, user.password],
       function (err) {
         if (err) {
           console.error('Error inserting data into database:', err.message);
           reject(err);
         } else {
           console.log('A row in user table has been inserted');
-          resolve();
+          resolve(this.lastID);
         }
       }
     );
@@ -271,6 +271,47 @@ function getDataByPlantId(plant_id) {
   });
 }
 
+/**
+ * Retrieves a user by their email address.
+ * @param {string} email - The email address of the user.
+ * @return {Promise<User>} A promise that resolves with the user object, or null if not found.
+ */
+function getUserByEmail(email) {
+  return new Promise((resolve, reject) => {
+    db.get(sql.getUserByEmailSQL, [email], (err, row) => {
+      if (err) {
+        console.error('Error fetching user by email:', err.message);
+        reject(err);
+      } else if (row) {
+        const user = new User(
+          row.user_id,
+          row.username,
+          row.email,
+          row.password
+        );
+        resolve(user);
+      } else {
+        resolve(null);
+      }
+    });
+  });
+}
+
+function verifyUserPassword(user_id, hashedPwd) {
+  return new Promise((resolve, reject) => {
+    db.get(sql.getUserPasswordSQL, [user_id], (err, row) => {
+      if (err) {
+        console.error('Error fetching user password:', err.message);
+        reject(err);
+      } else if (row) {
+        resolve(row.password === hashedPwd);
+      } else {
+        resolve(false);
+      }
+    });
+  });
+}
+
 process.on('SIGINT', () => {
   db.close((err) => {
     if (err) {
@@ -287,4 +328,6 @@ module.exports = {
   storeSensorData,
   createUser,
   createPlant,
+  getUserByEmail,
+  verifyUserPassword,
 };

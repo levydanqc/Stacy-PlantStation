@@ -13,13 +13,17 @@ const usersRoutes = (app) => {
 
     console.log('Received data : ', JSON.stringify(userObject));
 
-    database.createUser(userObject).then(() => {
-      console.log('Created user');
+    database
+      .createUser(userObject)
+      .then((userId) => {
+        console.log('Created user');
 
-      return res
-        .status(200)
-        .send({ message: 'Data received and stored successfully' });
-    });
+        return res.status(201).send({ userId: userId });
+      })
+      .catch((err) => {
+        console.error('Error creating user:', err.message);
+        return res.status(500).send({ message: 'Internal Server Error' });
+      });
   });
 
   app.get('/users', (req, res) => {

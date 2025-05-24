@@ -4,18 +4,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
-import '../utilities/logger.dart' show log;
+import '../services/logger.dart' show log;
 
-class WeatherDisplay extends StatefulWidget {
-  const WeatherDisplay({super.key});
+class WeatherView extends StatefulWidget {
+  const WeatherView({super.key});
 
   static const routeName = '/weather';
 
   @override
-  State<WeatherDisplay> createState() => _WeatherDisplayState();
+  State<WeatherView> createState() => _WeatherViewState();
 }
 
-class _WeatherDisplayState extends State<WeatherDisplay> {
+class _WeatherViewState extends State<WeatherView> {
   final String _webSocketUrl = dotenv.env['WEBSOCKET_URL']!;
 
   List<Map<String, dynamic>> _weatherData = [];
