@@ -41,13 +41,15 @@ class _LoginViewState extends State<LoginView> {
           backgroundColor: Colors.teal,
         ),
       );
-      // TODO: Implement actual login logic (e.g., API call to your server)
       String hashedPassword = hashPassword(_passwordController.text);
       ApiManager.loginUser(_emailController.text, hashedPassword)
           .then((response) {
         if (response['user_id'] != null) {
           log.info('User ID: ${response['user_id']}');
-          StorageManager().setString('userId', response['user_id']).then((_) {
+
+          StorageManager()
+              .setString('userId', response['user_id'].toString())
+              .then((_) {
             log.info('User logged in successfully, navigating to HomeView');
             if (mounted) {
               GoRouter.of(context).go(HomeView.routeName);
@@ -158,6 +160,7 @@ class _LoginViewState extends State<LoginView> {
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.next,
                   decoration: InputDecoration(
                     labelText: 'Email',
                     hintText: 'Enter your email',
@@ -195,6 +198,8 @@ class _LoginViewState extends State<LoginView> {
                 TextFormField(
                   controller: _passwordController,
                   obscureText: !_isPasswordVisible,
+                  textInputAction: TextInputAction.done,
+                  onFieldSubmitted: (_) => _login(),
                   decoration: InputDecoration(
                     labelText: 'Password',
                     hintText: 'Enter your password',

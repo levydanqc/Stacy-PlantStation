@@ -283,13 +283,7 @@ function getUserByEmail(email) {
         console.error('Error fetching user by email:', err.message);
         reject(err);
       } else if (row) {
-        const user = new User(
-          row.user_id,
-          row.username,
-          row.email,
-          row.password
-        );
-        resolve(user);
+        resolve(row);
       } else {
         resolve(null);
       }
