@@ -2,6 +2,7 @@ import 'dart:convert'; // For jsonDecode
 
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:stacy_frontend/src/utilities/manager/storage_manager.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../services/logger.dart' show log;
@@ -49,65 +50,73 @@ class _WeatherViewState extends State<WeatherView> {
       });
       log.info("WebSocket connection established to $_webSocketUrl");
 
-      // TODO: Change this to the userId you want to send
-      _channel!.sink.add("{\"userId\": \"1\"}");
-
-      // Listen for incoming messages from the server
-      _channel!.stream.listen(
-        (message) {
-          log.info("Received from WebSocket: $message");
-          if (mounted) {
-            try {
-              final data = jsonDecode(message);
-              if (data is List) {
-                // If the data is a list, update the weatherData
-                setState(() {
-                  _weatherData = List<Map<String, dynamic>>.from(data);
-                  _connectionStatus = "Data Received";
-                });
-              } else if (data is Map && data['type'] == 'update') {
-                setState(() {
-                  // add to the existing weatherData and update temp and humidity
-                  _weatherData.add(Map<String, dynamic>.from(data));
-                  _weatherData[0]['temperature'] = data['temperature'];
-                  _weatherData[0]['humidity'] = data['humidity'];
-                  _connectionStatus = "Data Received";
-                });
-              } else if (data is String) {
-                log.warning("Received string data: $data");
-              } else {
-                log.warning("Expected a list but got: ${data.runtimeType}");
-                log.warning("Unexpected data format: $data");
+      // get uid from StorageManager
+      StorageManager().getString('uid').then((uid) {
+        if (uid != null) {
+          _channel!.sink.add("{\"uid\": \"$uid\"}");
+          // Listen for incoming messages from the server
+          _channel!.stream.listen(
+            (message) {
+              log.info("Received from WebSocket: $message");
+              if (mounted) {
+                try {
+                  final data = jsonDecode(message);
+                  log.fine("Decoded JSON data: $data");
+                  if (data is List) {
+                    // If the data is a list, update the weatherData
+                    setState(() {
+                      _weatherData = List<Map<String, dynamic>>.from(data);
+                      _connectionStatus = "Data Received";
+                    });
+                  } else if (data is Map && data['type'] == 'update') {
+                    setState(() {
+                      // add to the existing weatherData and update temp and humidity
+                      _weatherData.add(Map<String, dynamic>.from(data));
+                      _weatherData[0]['temperature'] = data['temperature'];
+                      _weatherData[0]['humidity'] = data['humidity'];
+                      _connectionStatus = "Data Received";
+                    });
+                  } else if (data is String) {
+                    log.warning("Received string data: $data");
+                  } else {
+                    log.warning("Expected a list but got: ${data.runtimeType}");
+                    log.warning("Unexpected data format: $data");
+                  }
+                } catch (e) {
+                  log.warning("Error decoding JSON: $e");
+                }
               }
-            } catch (e) {
-              log.warning("Error decoding JSON: $e");
-            }
-          }
-        },
-        onError: (error) {
-          log.warning("WebSocket Error: $error");
-          if (mounted) {
-            setState(() {
-              _connectionStatus = "Error: ${error.toString()}";
-              _isConnected = false;
-            });
-            // Optional: Implement retry logic here
-            _scheduleReconnect();
-          }
-        },
-        onDone: () {
-          log.info("WebSocket connection closed");
-          if (mounted) {
-            setState(() {
-              _connectionStatus = "Disconnected";
-              _isConnected = false;
-            });
-            // Optional: Implement retry logic here if the closure was unexpected
-            _scheduleReconnect();
-          }
-        },
-        cancelOnError: true, // Automatically cancels subscription on error
-      );
+            },
+            onError: (error) {
+              log.warning("WebSocket Error: $error");
+              if (mounted) {
+                setState(() {
+                  _connectionStatus = "Error: ${error.toString()}";
+                  _isConnected = false;
+                });
+                // Optional: Implement retry logic here
+                _scheduleReconnect();
+              }
+            },
+            onDone: () {
+              log.info("WebSocket connection closed");
+              if (mounted) {
+                setState(() {
+                  _connectionStatus = "Disconnected";
+                  _isConnected = false;
+                });
+                // Optional: Implement retry logic here if the closure was unexpected
+                _scheduleReconnect();
+              }
+            },
+            cancelOnError: true, // Automatically cancels subscription on error
+          );
+        } else {
+          log.warning("UID is null, cannot subscribe to WebSocket.");
+        }
+      }).catchError((error) {
+        log.severe("Error retrieving UID: $error");
+      });
     } catch (e) {
       log.severe("Failed to connect WebSocket: $e");
       if (mounted) {

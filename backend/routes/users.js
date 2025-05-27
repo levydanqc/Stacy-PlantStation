@@ -1,3 +1,5 @@
+const crypto = require('crypto');
+
 const database = require('../utilities/database');
 const authenticateToken = require('../middleware/authenticateToken.js');
 
@@ -8,6 +10,8 @@ const usersRoutes = (app) => {
 
   app.post('/users', (req, res) => {
     const rawDataFromDevice = req.body;
+    const uid = crypto.randomBytes(8).toString('hex');
+    rawDataFromDevice.uid = uid;
 
     const userObject = User.fromObject(rawDataFromDevice);
 
@@ -15,10 +19,10 @@ const usersRoutes = (app) => {
 
     database
       .createUser(userObject)
-      .then((userId) => {
+      .then((hash) => {
         console.log('Created user');
 
-        return res.status(201).send({ userId: userId });
+        return res.status(201).send({ hash: hash });
       })
       .catch((err) => {
         console.error('Error creating user:', err.message);

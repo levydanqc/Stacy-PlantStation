@@ -29,7 +29,7 @@ class StorageManager {
   }
 
   Future<bool> isLoggedIn() async {
-    return await getString('userId').then((value) {
+    return await getString('uid').then((value) {
       return value != null;
     }).catchError((error) {
       log.warning('Error checking login status: $error');

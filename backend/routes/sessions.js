@@ -19,7 +19,7 @@ const sessionsRoutes = (app) => {
         return res.status(401).json({ error: 'Invalid password' });
       }
 
-      res.status(200).json({ user_id: user.user_id });
+      res.status(200).json({ uid: user.uid });
     } catch (error) {
       console.error('Error creating session:', error);
       res.status(500).json({ error: 'Internal server error' });

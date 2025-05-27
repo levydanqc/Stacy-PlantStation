@@ -8,7 +8,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?);
 `;
 
 const addUserSQL = `
-INSERT INTO users (username, email, password) VALUES (?, ?, ?);
+INSERT INTO users (username, uid, email, password) VALUES (?, ?, ?, ?);
 `;
 
 const addPlantSQL = `
@@ -31,6 +31,10 @@ const getUserByEmailSQL = `
 SELECT * FROM users WHERE email = ?;
 `;
 
+const getUserByUIDSQL = `
+SELECT * FROM users WHERE uid = ?;
+`;
+
 const getUserPasswordSQL = `
 SELECT password FROM users WHERE user_id = ?;
 `;
@@ -45,4 +49,5 @@ module.exports = {
   getTablesSQL,
   getUserByEmailSQL,
   getUserPasswordSQL,
+  getUserByUIDSQL,
 };

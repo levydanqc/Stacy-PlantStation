@@ -4,23 +4,30 @@ import 'dart:convert';
 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
+import 'package:stacy_frontend/src/utilities/manager/storage_manager.dart';
 
 class ApiManager {
   static String baseUrl = dotenv.env['API_URL']!;
 
-  static Map<String, String> baseHeaders = {
-    'content-type': 'application/json',
-    'accept': 'application/json',
-    'authorization': 'Bearer ${dotenv.env['BEARER_TOKEN']}',
-    "Device-ID": "01:01:01:01:01",
-    "User-ID": "1"
-  };
+  static Future<Map<String, String>> getHeaders() async {
+    final String uid = await StorageManager().getString('uid') ?? '';
+    final String? bearerToken = dotenv.env['BEARER_TOKEN'];
+
+    final Map<String, String> headers = {
+      'content-type': 'application/json',
+      'accept': 'application/json',
+      'authorization': 'Bearer $bearerToken',
+      'uid': uid,
+    };
+
+    return headers;
+  }
 
   static Future<Map<String, dynamic>> createUser(
       String email, String hashedPwd) async {
     final response = await http.post(
       Uri.parse('$baseUrl/users'),
-      headers: baseHeaders,
+      headers: await getHeaders(),
       body: json.encode({
         'email': email,
         'password': hashedPwd,
@@ -39,7 +46,7 @@ class ApiManager {
       String email, String hashedPwd) async {
     final response = await http.post(
       Uri.parse('$baseUrl/sessions'),
-      headers: baseHeaders,
+      headers: await getHeaders(),
       body: json.encode({
         'email': email,
         'password': hashedPwd,
@@ -70,7 +77,7 @@ class ApiManager {
       String endpoint, Map<String, dynamic> data) async {
     final response = await http.post(
       Uri.parse('$baseUrl/$endpoint'),
-      headers: baseHeaders,
+      headers: await getHeaders(),
       body: json.encode(data),
     );
 

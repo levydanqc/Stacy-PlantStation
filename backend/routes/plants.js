@@ -8,7 +8,7 @@ const plantsRoutes = (app) => {
   app.post('/plants', (req, res) => {
     const rawDataFromDevice = req.body;
     const device_id = req.headers['device-id'];
-    const user_id = req.headers['user-id'];
+    const uid = req.headers['uid'];
 
     const plantObject = Plant.fromObject({
       device_id: device_id,
@@ -18,7 +18,7 @@ const plantsRoutes = (app) => {
     console.log('Received data : ', JSON.stringify(plantObject));
 
     database
-      .createPlant(plantObject, user_id)
+      .createPlant(plantObject, uid)
       .then((plant_id) => {
         console.log('Created plant with ID:', plant_id);
 

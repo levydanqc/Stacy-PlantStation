@@ -44,29 +44,29 @@ class _LoginViewState extends State<LoginView> {
       String hashedPassword = hashPassword(_passwordController.text);
       ApiManager.loginUser(_emailController.text, hashedPassword)
           .then((response) {
-        if (response['user_id'] != null) {
-          log.info('User ID: ${response['user_id']}');
+        if (response['uid'] != null) {
+          log.info('UID: ${response['uid']}');
 
           StorageManager()
-              .setString('userId', response['user_id'].toString())
+              .setString('uid', response['uid'].toString())
               .then((_) {
             log.info('User logged in successfully, navigating to HomeView');
             if (mounted) {
               GoRouter.of(context).go(HomeView.routeName);
             }
           }).catchError((error) {
-            log.severe('Error storing user ID: $error');
+            log.severe('Error storing uid: $error');
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('Error storing user ID'),
+                  content: Text('Error storing uid'),
                   backgroundColor: Colors.red,
                 ),
               );
             }
           });
         } else {
-          log.warning('User ID not found in response');
+          log.warning('UID not found in response');
         }
       });
     }

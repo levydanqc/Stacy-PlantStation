@@ -31,7 +31,7 @@ def createPlant():
             "Content-Type": "application/json",
             "Authorization": "Bearer BEARER_TOKEN",
             "Device-ID" : "02:02:02:02:02",
-            "User-ID" : "1"
+            "UID" : "bd91244764d4360a",
     }
     data = {
         "plant_name": "aloe"
@@ -52,7 +52,7 @@ def createSensorData():
         "Content-Type": "application/json",
         "Authorization": "Bearer BEARER_TOKEN",
         "Device-ID" : "02:02:02:02:02",
-        "User-ID" : "1"
+        "UID" : "bd91244764d4360a",
     }
     data = {
         "temperature": round(20.0 + (time() % 10), 2),
@@ -76,8 +76,8 @@ def createSensorData():
   
 
 if __name__ == "__main__":
-    createUser()
+    # createUser()
     # sleep(1)
     # createPlant()
     # sleep(1)
-    # createSensorData()
+    createSensorData()

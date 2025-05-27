@@ -73,7 +73,7 @@ async function initializeDatabase() {
  * @param {string} device_id - The ID of the device (MAC address).
  * @returns {Promise<void>} A promise that resolves when data is saved, or rejects on error.
  */
-function storeSensorData(weatherData, device_id, user_id) {
+function storeSensorData(weatherData, device_id, uid) {
   return new Promise((resolve, reject) => {
     const {
       temperature,
@@ -89,22 +89,22 @@ function storeSensorData(weatherData, device_id, user_id) {
       console.error('Error: device_id is missing in weatherData');
       return reject(new Error('device_id is required'));
     }
-    if (!user_id) {
-      console.error('Error: user_id is missing in weatherData');
-      return reject(new Error('user_id is required'));
+    if (!uid) {
+      console.error('Error: uid is missing in weatherData');
+      return reject(new Error('uid is required'));
     }
 
-    getPlantIdByUserIdAndDeviceId(user_id, device_id)
+    getPlantIdByUIDAndDeviceId(uid, device_id)
       .then((plant_id) => {
         if (!plant_id) {
           console.error(
-            `Error: No plant_id found for device_id "${device_id}" and user_id "${user_id}"`
+            `Error: No plant_id found for device_id "${device_id}" and uid "${uid}"`
           );
           return reject(new Error('plant_id is required'));
         }
 
         console.log(
-          `Obtained plant_id "${plant_id}" for device_id "${device_id}" and user_id "${user_id}"`
+          `Obtained plant_id "${plant_id}" for device_id "${device_id}" and uid "${uid}"`
         );
 
         return new Promise((resolve, reject) => {
@@ -129,7 +129,7 @@ function storeSensorData(weatherData, device_id, user_id) {
                 reject(err);
               } else {
                 console.log(
-                  `A row has been inserted with rowid ${this.lastID} for user_id: ${user_id}`
+                  `A row has been inserted with rowid ${this.lastID} for user "${uid}"`
                 );
                 resolve();
               }
@@ -147,26 +147,35 @@ function storeSensorData(weatherData, device_id, user_id) {
 
 /**
  * Retrieves the plant ID associated with a given user ID and device ID.
- * @param {string} user_id - The ID of the user.
+ * @param {string} uid - The unique identifier of the user.
  * @param {string} device_id - The ID of the device (MAC address).
  * @returns {Promise<string>} A promise that resolves with the plant ID.
  */
-function getPlantIdByUserIdAndDeviceId(user_id, device_id) {
+function getPlantIdByUIDAndDeviceId(uid, device_id) {
   return new Promise((resolve, reject) => {
-    db.get(
-      sql.getPlantIdFromUserIdAndDeviceIdSQL,
-      [user_id, device_id],
-      (err, row) => {
-        if (err) {
-          console.error('Error fetching plant_id:', err.message);
-          reject(err);
-        } else if (row) {
-          resolve(row.plant_id);
-        } else {
-          resolve(null);
-        }
+    db.get(sql.getUserByUIDSQL, [uid], (err, row) => {
+      if (err) {
+        console.error('Error fetching user by UID:', err.message);
+        reject(err);
+      } else if (row) {
+        db.get(
+          sql.getPlantIdFromUserIdAndDeviceIdSQL,
+          [row.user_id, device_id],
+          (err, row) => {
+            if (err) {
+              console.error('Error fetching plant_id:', err.message);
+              reject(err);
+            } else if (row) {
+              resolve(row.plant_id);
+            } else {
+              resolve(null);
+            }
+          }
+        );
+      } else {
+        resolve(null);
       }
-    );
+    });
   });
 }
 
@@ -176,18 +185,17 @@ function getPlantIdByUserIdAndDeviceId(user_id, device_id) {
  * @return {Promise<void>} A promise that resolves when the user is created, or rejects on error.
  */
 function createUser(user) {
-  // TODO : it needs to return the user_id for the client
   return new Promise((resolve, reject) => {
     db.run(
       sql.addUserSQL,
-      [user.username, user.email, user.password],
+      [user.username, user.uid, user.email, user.password],
       function (err) {
         if (err) {
           console.error('Error inserting data into database:', err.message);
           reject(err);
         } else {
           console.log('A row in user table has been inserted');
-          resolve(this.lastID);
+          resolve(user.uid);
         }
       }
     );
@@ -197,49 +205,70 @@ function createUser(user) {
 /**
  * Creates a new plant in the database.
  * @param {Object} plant - The plant object containing device_id and plant_name.
- * @param {string} user_id - The ID of the user.
+ * @param {string} uid - The unique identifier of the user.
  * @return {Promise<number>} A promise that resolves with the plant ID, or rejects on error.
  */
-function createPlant(plant, user_id) {
+function createPlant(plant, uid) {
   return new Promise((resolve, reject) => {
-    db.run(
-      sql.addPlantSQL,
-      [user_id, plant.device_id, plant.plant_name],
-      function (err) {
-        if (err) {
-          console.error('Error inserting data into database:', err.message);
-          reject(err);
-        } else {
-          console.log('A row in plant table has been inserted');
-          resolve(this.lastID);
-        }
+    db.get(sql.getUserByUIDSQL, [uid], (err, row) => {
+      if (err) {
+        console.error('Error fetching user by UID:', err.message);
+        return reject(err);
       }
-    );
+      if (!row) {
+        console.error(`No user found with UID: ${uid}`);
+        return reject(new Error('User not found'));
+      }
+      db.run(
+        sql.addPlantSQL,
+        [row.user_id, plant.device_id, plant.plant_name],
+        function (err) {
+          if (err) {
+            console.error('Error inserting data into database:', err.message);
+            reject(err);
+          } else {
+            console.log('A row in plant table has been inserted');
+            resolve(this.lastID);
+          }
+        }
+      );
+    });
   });
 }
 
-function getDataByUserId(user_id) {
+function getDataByUID(uid) {
   return new Promise((resolve, reject) => {
-    db.all(sql.getPlantIdFromUserIdSQL, [user_id], (err, rows) => {
+    db.get(sql.getUserByUIDSQL, [uid], (err, row) => {
       if (err) {
-        console.error('Error fetching plant IDs:', err.message);
+        console.error('Error fetching user by UID:', err.message);
         reject(err);
-      } else {
-        const plantIds = rows.map((row) => row.plant_id);
-        console.log('Plant IDs:', plantIds);
-
-        const promises = plantIds.map((plantId) => getDataByPlantId(plantId));
-
-        Promise.all(promises)
-          .then((results) => {
-            const allData = results.flat();
-            resolve(allData);
-          })
-          .catch((error) => {
-            console.error('Error fetching data by plant ID:', error);
-            reject(error);
-          });
       }
+      if (!row) {
+        console.error(`No user found with UID: ${uid}`);
+        reject(new Error('User not found'));
+      }
+
+      db.all(sql.getPlantIdFromUserIdSQL, [row.user_id], (err, rows) => {
+        if (err) {
+          console.error('Error fetching plant IDs:', err.message);
+          reject(err);
+        } else {
+          const plantIds = rows.map((row) => row.plant_id);
+          console.log('Plant IDs:', plantIds);
+
+          const promises = plantIds.map((plantId) => getDataByPlantId(plantId));
+
+          Promise.all(promises)
+            .then((results) => {
+              const allData = results.flat();
+              resolve(allData);
+            })
+            .catch((error) => {
+              console.error('Error fetching data by plant ID:', error);
+              reject(error);
+            });
+        }
+      });
     });
   });
 }
@@ -318,7 +347,7 @@ process.on('SIGINT', () => {
 
 module.exports = {
   connectDatabase,
-  getDataByUserId,
+  getDataByUID,
   storeSensorData,
   createUser,
   createPlant,
