@@ -34,13 +34,6 @@ class _LoginViewState extends State<LoginView> {
 
   void _login() {
     if (_formKey.currentState!.validate()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-              'Logging in with Email: ${_emailController.text}, Password: ${_passwordController.text}'),
-          backgroundColor: Colors.teal,
-        ),
-      );
       String hashedPassword = hashPassword(_passwordController.text);
       ApiManager.loginUser(_emailController.text, hashedPassword)
           .then((response) {

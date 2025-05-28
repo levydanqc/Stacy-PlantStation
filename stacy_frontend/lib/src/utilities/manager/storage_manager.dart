@@ -36,4 +36,10 @@ class StorageManager {
       return false;
     });
   }
+
+  Future<void> logout() async {
+    final prefs = await _prefs;
+    await prefs.clear();
+    log.info('User logged out and storage cleared.');
+  }
 }
