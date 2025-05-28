@@ -30,15 +30,20 @@ const usersRoutes = (app) => {
       });
   });
 
-  app.get('/users', (req, res) => {
-    const sql = 'SELECT * FROM users';
-    database.all(sql, [], (err, rows) => {
-      if (err) {
-        console.error('Error fetching users:', err.message);
+  // Get plants from user by uid
+  app.get('/users/:uid/plants', (req, res) => {
+    const uid = req.params.uid;
+    
+    database
+      .getPlantsByUserUID(uid)
+      .then((plants) => {
+        console.log('Retrieved plants for user:', uid);
+        return res.status(200).send(plants);
+      })
+      .catch((err) => {
+        console.error('Error retrieving plants:', err.message);
         return res.status(500).send({ message: 'Internal Server Error' });
-      }
-      res.status(200).json(rows);
-    });
+      });
   });
 };
 

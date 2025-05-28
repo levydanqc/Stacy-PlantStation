@@ -1,4 +1,4 @@
-const SensorData = require('../models/sensorData');
+const PlantData = require('../models/PlantData');
 const database = require('../utilities/database');
 const broadcast = require('../utilities/broadcast');
 const authenticateToken = require('../middleware/authenticateToken.js');
@@ -28,16 +28,16 @@ const weatherRoutes = (app, clients) => {
     }
 
     try {
-      const sensorDataObject = SensorData.fromObject(rawDataFromDevice);
+      const plantDataObject = PlantData.fromObject(rawDataFromDevice);
       // Make sure removing this does not break anything
-      // const cleanedSensorData = sensorDataObject.toObject();
+      // const cleanedPlantData = plantDataObject.toObject();
 
       database
-        .storeSensorData(sensorDataObject, device_id, uid)
+        .storePlantData(plantDataObject, device_id, uid)
         .then(() => {
           broadcast(
             clients,
-            JSON.stringify({ type: 'update', ...sensorDataObject }),
+            JSON.stringify({ type: 'update', ...plantDataObject }),
             uid
           );
           return res

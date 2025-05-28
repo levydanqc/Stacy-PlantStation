@@ -2,7 +2,7 @@ const getTablesSQL = `
 SELECT name FROM sqlite_master WHERE type='table' LIMIT 1;
 `;
 
-const addSensorDataSQL = `
+const addPlantDataSQL = `
 INSERT INTO sensor_data (plant_id, temperature, humidity, moisture, pressure, hic, batteryVoltage, batteryPercentage) 
 VALUES (?, ?, ?, ?, ?, ?, ?, ?);
 `;
@@ -39,8 +39,12 @@ const getUserPasswordSQL = `
 SELECT password FROM users WHERE user_id = ?;
 `;
 
+const getPlantsByUserIdSQL = `
+SELECT * FROM plants WHERE user_id = ?;
+`;
+
 module.exports = {
-  addSensorDataSQL,
+  addPlantDataSQL,
   getPlantIdFromUserIdAndDeviceIdSQL,
   getPlantIdFromUserIdSQL,
   getDataByPlantIdSQL,
@@ -50,4 +54,5 @@ module.exports = {
   getUserByEmailSQL,
   getUserPasswordSQL,
   getUserByUIDSQL,
+  getPlantsByUserIdSQL,
 };

@@ -5,7 +5,7 @@ const sql = require('../sql/sql');
 const sqlInitialize = require('../sql/createTable.js');
 
 const User = require('../models/User');
-const SensorData = require('../models/sensorData.js');
+const PlantData = require('../models/PlantData.js');
 
 const dbPath = path.resolve(__dirname, '../plant_station.db');
 
@@ -56,7 +56,7 @@ async function initializeDatabase() {
       db.exec(
         sqlInitialize.createUsersTable +
           sqlInitialize.createPlantsTable +
-          sqlInitialize.createSensorDataTable +
+          sqlInitialize.createPlantDataTable +
           sqlInitialize.createIndex,
         (err) => (err ? reject(err) : resolve())
       )
@@ -69,11 +69,11 @@ async function initializeDatabase() {
 
 /**
  * Saves weather data to the database.
- * @param {SensorData} weatherData - The weather data object (SensorData)
+ * @param {PlantData} weatherData - The weather data object (PlantData)
  * @param {string} device_id - The ID of the device (MAC address).
  * @returns {Promise<void>} A promise that resolves when data is saved, or rejects on error.
  */
-function storeSensorData(weatherData, device_id, uid) {
+function storePlantData(weatherData, device_id, uid) {
   return new Promise((resolve, reject) => {
     const {
       temperature,
@@ -109,7 +109,7 @@ function storeSensorData(weatherData, device_id, uid) {
 
         return new Promise((resolve, reject) => {
           db.run(
-            sql.addSensorDataSQL,
+            sql.addPlantDataSQL,
             [
               plant_id,
               temperature,
@@ -236,6 +236,11 @@ function createPlant(plant, uid) {
   });
 }
 
+/**
+ * Retrieves all sensor data for a user by their UID.
+ * @param {string} uid - The unique identifier of the user.
+ * @return {Promise<Array>} A promise that resolves with an array of sensor data objects.
+ */
 function getDataByUID(uid) {
   return new Promise((resolve, reject) => {
     db.get(sql.getUserByUIDSQL, [uid], (err, row) => {
@@ -285,7 +290,7 @@ function getDataByPlantId(plant_id) {
         console.error('Error fetching sensor data:', err.message);
         reject(err);
       } else {
-        const sensorData = rows.map((row) => ({
+        const PlantData = rows.map((row) => ({
           temperature: row.temperature,
           humidity: row.humidity,
           moisture: row.moisture,
@@ -294,7 +299,7 @@ function getDataByPlantId(plant_id) {
           batteryVoltage: row.batteryVoltage,
           batteryPercentage: row.batteryPercentage,
         }));
-        resolve(sensorData);
+        resolve(PlantData);
       }
     });
   });
@@ -320,6 +325,12 @@ function getUserByEmail(email) {
   });
 }
 
+/**
+ * Verifies a user's password against the stored hash.
+ * @param {number} user_id - The ID of the user.
+ * @param {string} hashedPwd - The hashed password to verify.
+ * @return {Promise<boolean>} A promise that resolves with true if the password matches, false otherwise.
+ */
 function verifyUserPassword(user_id, hashedPwd) {
   return new Promise((resolve, reject) => {
     db.get(sql.getUserPasswordSQL, [user_id], (err, row) => {
@@ -330,6 +341,29 @@ function verifyUserPassword(user_id, hashedPwd) {
         resolve(row.password === hashedPwd);
       } else {
         resolve(false);
+      }
+    });
+  });
+}
+
+function getPlantsByUserUID(uid) {
+  return new Promise((resolve, reject) => {
+    db.get(sql.getUserByUIDSQL, [uid], (err, row) => {
+      if (err) {
+        console.error('Error fetching user by UID:', err.message);
+        reject(err);
+      } else if (!row) {
+        console.error(`No user found with UID: ${uid}`);
+        reject(new Error('User not found'));
+      } else {
+        db.all(sql.getPlantsByUserIdSQL, [row.user_id], (err, rows) => {
+          if (err) {
+            console.error('Error fetching plants:', err.message);
+            reject(err);
+          } else {
+            resolve(rows);
+          }
+        });
       }
     });
   });
@@ -348,9 +382,10 @@ process.on('SIGINT', () => {
 module.exports = {
   connectDatabase,
   getDataByUID,
-  storeSensorData,
+  storePlantData,
   createUser,
   createPlant,
   getUserByEmail,
   verifyUserPassword,
+  getPlantsByUserUID,
 };

@@ -18,8 +18,8 @@ const webSocket = (wss, clients) => {
 
           database
             .getDataByUID(uid)
-            .then((sensorData) => {
-              ws.send(JSON.stringify(sensorData));
+            .then((plantData) => {
+              ws.send(JSON.stringify(plantData));
             })
             .catch((error) => {
               console.error(`Error fetching data for user ${uid}:`, error);

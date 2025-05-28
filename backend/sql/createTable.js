@@ -18,8 +18,8 @@ CREATE TABLE IF NOT EXISTS plants (
     FOREIGN KEY (user_id) REFERENCES users(user_id)
 );`;
 
-const createSensorDataTable = `
-CREATE TABLE IF NOT EXISTS sensor_data (
+const createPlantDataTable = `
+CREATE TABLE IF NOT EXISTS plant_data (
     data_id INTEGER PRIMARY KEY AUTOINCREMENT,
     plant_id INTEGER NOT NULL,
     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -41,6 +41,6 @@ CREATE INDEX IF NOT EXISTS idx_user_id_plant_id ON plants (user_id, plant_id);
 module.exports = {
   createUsersTable,
   createPlantsTable,
-  createSensorDataTable,
+  createPlantDataTable,
   createIndex,
 };

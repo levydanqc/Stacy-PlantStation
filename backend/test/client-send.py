@@ -46,7 +46,7 @@ def createPlant():
     except Exception as e:
         print("An error occurred:", e)
   
-def createSensorData():
+def createPlantData():
     url = "http://127.0.0.1:3001/weather"
     headers = {
         "Content-Type": "application/json",
@@ -73,11 +73,30 @@ def createSensorData():
             print(f"Failed to send data. Status code: {response.status_code}, Response: {response.text}")
     except Exception as e:
         print("An error occurred:", e)
-  
+
+def getPlantsFromUser():
+    uid = "bd91244764d4360a"
+    url = f"http://192.168.45.162:3001/users/{uid}/plants"
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer BEARER_TOKEN",
+    }
+
+    try:
+        response = requests.get(url, headers=headers)
+        if response.status_code == 200:
+            print("Data retrieved successfully:", response.json())
+        else:
+            print(f"Failed to retrieve data. Status code: {response.status_code}, Response: {response.text}")
+    except Exception as e:
+        print("An error occurred:", e)
+        
 
 if __name__ == "__main__":
     # createUser()
     # sleep(1)
     # createPlant()
     # sleep(1)
-    createSensorData()
+    # createPlantData()
+    # sleep(1)
+    getPlantsFromUser()
