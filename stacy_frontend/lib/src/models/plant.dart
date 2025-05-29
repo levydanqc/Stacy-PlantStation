@@ -11,8 +11,8 @@ class Plant {
 
   factory Plant.fromJson(Map<String, dynamic> json) {
     return Plant(
-      plantName: json['plantName'] as String,
-      plantData: (json['plantData'] as List)
+      plantName: json['plant_name'] as String,
+      plantData: (json['plant_data'] as List)
           .map((item) => PlantData.fromJson(item))
           .toList(),
     );

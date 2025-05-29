@@ -21,18 +21,17 @@ function connectDatabase() {
     db = new sqlite3.Database(dbPath, (err) => {
       if (err) {
         console.error('Error connecting to database:', err.message);
-        reject(err);
+        return reject(err);
       } else {
         db.get(sql.getTablesSQL, (err, row) => {
           if (err) {
             console.error('Error checking for existing tables:', err.message);
-            reject(err);
-            return;
+            return reject(err);
           }
           if (!row) {
             initializeDatabase().catch((error) => {
               console.error('Error initializing database:', error);
-              reject(error);
+              return reject(error);
             });
             console.log('Connected to a new SQLite database.');
           } else {
@@ -58,7 +57,13 @@ async function initializeDatabase() {
           sqlInitialize.createPlantsTable +
           sqlInitialize.createPlantDataTable +
           sqlInitialize.createIndex,
-        (err) => (err ? reject(err) : resolve())
+        (err) => {
+          if (err) {
+            console.error('Error initializing database:', err.message);
+            return reject(err);
+          }
+          resolve();
+        }
       )
     );
     console.log('Database initialized successfully.');
@@ -346,25 +351,67 @@ function verifyUserPassword(user_id, hashedPwd) {
   });
 }
 
-function getPlantsByUserUID(uid) {
+/**
+ * Retrieves all plants and their data for a user by their UID.
+ * @param {string} uid - The unique identifier of the user.
+ * @return {Promise<Array>} A promise that resolves with an array of plant data objects.
+ */
+function getPlantsDataByUserUID(uid) {
   return new Promise((resolve, reject) => {
     db.get(sql.getUserByUIDSQL, [uid], (err, row) => {
       if (err) {
         console.error('Error fetching user by UID:', err.message);
-        reject(err);
-      } else if (!row) {
-        console.error(`No user found with UID: ${uid}`);
-        reject(new Error('User not found'));
-      } else {
-        db.all(sql.getPlantsByUserIdSQL, [row.user_id], (err, rows) => {
-          if (err) {
-            console.error('Error fetching plants:', err.message);
-            reject(err);
-          } else {
-            resolve(rows);
-          }
-        });
+        return reject(err);
       }
+      if (!row) {
+        console.error(`No user found with UID: ${uid}`);
+        return reject(new Error('User not found'));
+      }
+
+      console.log(`Fetching plants for user with ID: ${row}`);
+
+      db.all(sql.getPlantsByUserIdSQL, [row.user_id], (err, rows) => {
+        if (err) {
+          console.error('Error fetching plants:', err.message);
+          return reject(err);
+        }
+        const promises = rows.map((plant) => {
+          return new Promise((resolve, reject) => {
+            db.all(
+              sql.getDataByPlantIdSQL,
+              [plant.plant_id],
+              (err, dataRows) => {
+                if (err) {
+                  console.error('Error fetching plant data:', err.message);
+                  return reject(err);
+                } else {
+                  const plantData = dataRows.map((dataRow) => ({
+                    timestamp: dataRow.timestamp,
+                    temperature: dataRow.temperature,
+                    humidity: dataRow.humidity,
+                    moisture: dataRow.moisture,
+                    pressure: dataRow.pressure,
+                    hic: dataRow.hic,
+                    batteryVoltage: dataRow.batteryVoltage,
+                    batteryPercentage: dataRow.batteryPercentage,
+                  }));
+                  resolve({
+                    plant_name: plant.plant_name,
+                    plant_data: plantData,
+                  });
+                }
+              }
+            );
+          });
+        });
+        Promise.all(promises)
+          .then((plantDataArray) => {
+            resolve(plantDataArray);
+          })
+          .catch((error) => {
+            return reject(error);
+          });
+      });
     });
   });
 }
@@ -387,5 +434,5 @@ module.exports = {
   createPlant,
   getUserByEmail,
   verifyUserPassword,
-  getPlantsByUserUID,
+  getPlantsDataByUserUID,
 };

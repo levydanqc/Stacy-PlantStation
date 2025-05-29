@@ -3,7 +3,7 @@ SELECT name FROM sqlite_master WHERE type='table' LIMIT 1;
 `;
 
 const addPlantDataSQL = `
-INSERT INTO sensor_data (plant_id, temperature, humidity, moisture, pressure, hic, batteryVoltage, batteryPercentage) 
+INSERT INTO plant_data (plant_id, temperature, humidity, moisture, pressure, hic, batteryVoltage, batteryPercentage) 
 VALUES (?, ?, ?, ?, ?, ?, ?, ?);
 `;
 
@@ -24,7 +24,7 @@ SELECT plant_id FROM plants WHERE user_id = ?;
 `;
 
 const getDataByPlantIdSQL = `
-SELECT * FROM sensor_data WHERE plant_id = ? ORDER BY timestamp DESC LIMIT 100;
+SELECT * FROM plant_data WHERE plant_id = ? ORDER BY timestamp DESC LIMIT 100;
 `;
 
 const getUserByEmailSQL = `

@@ -41,7 +41,7 @@ const weatherRoutes = (app, clients) => {
             uid
           );
           return res
-            .status(200)
+            .status(201)
             .send({ message: 'Data stored and broadcast successfully' });
         })
         .catch((error) => {

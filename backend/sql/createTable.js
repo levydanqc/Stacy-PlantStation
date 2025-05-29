@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS plant_data (
 );`;
 
 const createIndex = `
-CREATE INDEX IF NOT EXISTS idx_plant_id_timestamp ON sensor_data (plant_id, timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_plant_id_timestamp ON plant_data (plant_id, timestamp);
 CREATE INDEX IF NOT EXISTS idx_user_id_plant_id ON plants (user_id, plant_id);
 `;
 

@@ -23,7 +23,7 @@ const plantsRoutes = (app) => {
         console.log('Created plant with ID:', plant_id);
 
         return res
-          .status(200)
+          .status(201)
           .send({ message: 'Plant created successfully', plant_id: plant_id });
       })
       .catch((error) => {

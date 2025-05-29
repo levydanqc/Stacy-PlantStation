@@ -5,7 +5,7 @@ import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:stacy_frontend/src/models/plant.dart';
-import 'package:stacy_frontend/src/models/plant_data.dart';
+import 'package:stacy_frontend/src/services/logger.dart' show log;
 import 'package:stacy_frontend/src/utilities/manager/storage_manager.dart';
 
 class ApiManager {
@@ -64,53 +64,28 @@ class ApiManager {
   }
 
   static Future<List<Plant>> getUserPlants() async {
-    // final response = await http.get(Uri.parse('$baseUrl/user/plants'),
-    //     headers: await getHeaders());
+    final Map<String, String> headers = await getHeaders();
+    final String uid = headers['uid']!;
 
-    // if (response.statusCode == 200) {
-    //   List<dynamic> jsonList = json.decode(response.body);
-    //   return jsonList.map((json) => Plant.fromJson(json)).toList();
-    // } else {
-    //   throw Exception('Failed to load user plants');
-    // }
+    final response = await http.get(Uri.parse('$baseUrl/users/$uid/plants'),
+        headers: headers);
 
-    return [
-      Plant(
-        plantName: "Mint",
-        plantData: [
-          PlantData(
-            timestamp: DateTime.parse("2025-05-26 10:00:00"),
-            temperature: 22.5,
-            humidity: 60.0,
-            moisture: 30.0,
-            pressure: 1013.0,
-            hic: 23.2,
-            batteryVoltage: 3.7,
-            batteryPercentage: 85.0,
-          ),
-          PlantData(
-            timestamp: DateTime.parse("2025-05-26 11:00:00"),
-            temperature: 23.0,
-            humidity: 58.0,
-            moisture: 32.0,
-            pressure: 1012.5,
-            hic: 22.8,
-            batteryVoltage: 3.6,
-            batteryPercentage: 80.0,
-          ),
-          PlantData(
-            timestamp: DateTime.parse("2025-05-26 12:00:00"),
-            temperature: 23.5,
-            humidity: 57.0,
-            moisture: 31.0,
-            pressure: 1012.0,
-            hic: 22.5,
-            batteryVoltage: 3.5,
-            batteryPercentage: 75.0,
-          ),
-        ],
-      )
-    ];
+    if (response.statusCode == 200) {
+      log.info('User plants fetched successfully');
+
+      final List<dynamic> plantsJson = json.decode(response.body)['plants'];
+
+      final List<Plant> plants = plantsJson.map((plant) {
+        return Plant.fromJson(plant);
+      }).toList();
+
+      return plants;
+    } else {
+      log.warning(
+          'Failed to load user plants, status code: ${response.statusCode}');
+      throw Exception(
+          'Failed to load user plants, status code: ${response.statusCode}');
+    }
   }
 
   Future<Map<String, dynamic>> fetchData(String endpoint) async {
@@ -119,7 +94,8 @@ class ApiManager {
     if (response.statusCode == 200) {
       return json.decode(response.body);
     } else {
-      throw Exception('Failed to load data');
+      throw Exception(
+          'Failed to load data, status code: ${response.statusCode}');
     }
   }
 

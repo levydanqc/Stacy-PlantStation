@@ -7,6 +7,7 @@ const User = require('../models/User');
 
 const usersRoutes = (app) => {
   app.use('/users', authenticateToken);
+  app.use('/users/:uid/plants', authenticateToken);
 
   app.post('/users', (req, res) => {
     const rawDataFromDevice = req.body;
@@ -19,10 +20,10 @@ const usersRoutes = (app) => {
 
     database
       .createUser(userObject)
-      .then((hash) => {
+      .then((uid) => {
         console.log('Created user');
 
-        return res.status(201).send({ hash: hash });
+        return res.status(201).send({ uid: uid });
       })
       .catch((err) => {
         console.error('Error creating user:', err.message);
@@ -30,15 +31,14 @@ const usersRoutes = (app) => {
       });
   });
 
-  // Get plants from user by uid
   app.get('/users/:uid/plants', (req, res) => {
     const uid = req.params.uid;
-    
+
     database
-      .getPlantsByUserUID(uid)
-      .then((plants) => {
+      .getPlantsDataByUserUID(uid)
+      .then((plants_data) => {
         console.log('Retrieved plants for user:', uid);
-        return res.status(200).send(plants);
+        return res.status(200).send({ plants: plants_data });
       })
       .catch((err) => {
         console.error('Error retrieving plants:', err.message);

@@ -18,41 +18,42 @@ def createUser():
 
     try:
         response = requests.post(url, json=data, headers=headers)
-        if response.status_code == 200:
+        if response.status_code == 201:
             print("Data sent successfully:", response.json())
+            return response.json().get("uid", "")
         else:
             print(f"Failed to send data. Status code: {response.status_code}, Response: {response.text}")
     except Exception as e:
         print("An error occurred:", e)
 
-def createPlant():
+def createPlant(uid, device_id, plant_name):
     url = "http://127.0.0.1:3001/plants"
     headers = {
             "Content-Type": "application/json",
             "Authorization": "Bearer BEARER_TOKEN",
-            "Device-ID" : "02:02:02:02:02",
-            "UID" : "bd91244764d4360a",
+            "Device-ID" : device_id,
+            "UID" : uid,
     }
     data = {
-        "plant_name": "aloe"
+        "plant_name": plant_name
     }
 
     try:
         response = requests.post(url, json=data, headers=headers)
-        if response.status_code == 200:
+        if response.status_code == 201:
             print("Data sent successfully:", response.json())
         else:
             print(f"Failed to send data. Status code: {response.status_code}, Response: {response.text}")
     except Exception as e:
         print("An error occurred:", e)
   
-def createPlantData():
+def createPlantData(uid, device_id):
     url = "http://127.0.0.1:3001/weather"
     headers = {
         "Content-Type": "application/json",
         "Authorization": "Bearer BEARER_TOKEN",
-        "Device-ID" : "02:02:02:02:02",
-        "UID" : "bd91244764d4360a",
+        "Device-ID" : device_id,
+        "UID" : uid,
     }
     data = {
         "temperature": round(20.0 + (time() % 10), 2),
@@ -67,15 +68,14 @@ def createPlantData():
     try:        
         response = requests.post(url, json=data, headers=headers)
 
-        if response.status_code == 200:
+        if response.status_code == 201:
             print("Data sent successfully:", response.json())
         else:
             print(f"Failed to send data. Status code: {response.status_code}, Response: {response.text}")
     except Exception as e:
         print("An error occurred:", e)
 
-def getPlantsFromUser():
-    uid = "bd91244764d4360a"
+def getPlantsFromUser(uid):
     url = f"http://192.168.45.162:3001/users/{uid}/plants"
     headers = {
         "Content-Type": "application/json",
@@ -93,10 +93,15 @@ def getPlantsFromUser():
         
 
 if __name__ == "__main__":
-    # createUser()
+    uid = "899243be588b1105"
+    device_id = "01:01:01:01:01"
+    plant_name = "Aloe"
+    
+    # uid = createUser()
     # sleep(1)
-    # createPlant()
+    # createPlant(uid, device_id, plant_name)
     # sleep(1)
-    # createPlantData()
-    # sleep(1)
-    getPlantsFromUser()
+    # for _ in range(5):
+    #     createPlantData(uid, device_id)
+    #     sleep(1)
+    getPlantsFromUser(uid)

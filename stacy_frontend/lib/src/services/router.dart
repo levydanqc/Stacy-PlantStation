@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stacy_frontend/src/models/plant.dart';
 import 'package:stacy_frontend/src/services/logger.dart';
 import 'package:stacy_frontend/src/utilities/manager/storage_manager.dart';
 // import 'package:stacy_frontend/src/settings/settings_view.dart';
 import 'package:stacy_frontend/src/views/home_view.dart';
+import 'package:stacy_frontend/src/views/plant_selector_view.dart';
 import 'package:stacy_frontend/src/views/weather_view.dart';
 import 'package:stacy_frontend/src/views/welcome/loading_view.dart';
 import 'package:stacy_frontend/src/views/welcome/login_view.dart';
@@ -27,7 +29,9 @@ final GoRouter router = GoRouter(
         GoRoute(
           path: HomeView.routeName,
           builder: (BuildContext context, GoRouterState state) {
-            return const HomeView();
+            return HomeView(
+              currentPage: state.extra != null ? state.extra as int : 0,
+            );
           },
         ),
         GoRoute(
@@ -48,6 +52,31 @@ final GoRouter router = GoRouter(
             return const WeatherView();
           },
         ),
+        GoRoute(
+          path: PlantSelectorView.routeName,
+          // add an animation, slide from the bottom
+          pageBuilder: (BuildContext context, GoRouterState state) {
+            final extra = state.extra as Map<String, dynamic>?;
+            final plants = extra?['plants'] as List<Plant>? ?? [];
+            final currentPage = extra?['currentPage'] as int? ?? 0;
+
+            return CustomTransitionPage(
+              key: state.pageKey,
+              child:
+                  PlantSelectorView(plants: plants, currentPage: currentPage),
+              transitionsBuilder:
+                  (context, animation, secondaryAnimation, child) {
+                return SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0, 1), // Start from the bottom
+                    end: Offset.zero,
+                  ).animate(animation),
+                  child: child,
+                );
+              },
+            );
+          },
+        )
       ],
     ),
   ],
