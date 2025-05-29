@@ -30,7 +30,7 @@ class PlantSelectorView extends StatelessWidget {
           return ListTile(
             title: Text(plant.plantName),
             subtitle: Text(
-                'Temperature: ${plant.plantData.last.temperature}°C, Humidity: ${plant.plantData.last.humidity}%'),
+                'Temperature: ${plant.plantData.first.temperature}°C, Humidity: ${plant.plantData.first.humidity}%'),
             onTap: () {
               Navigator.of(context).pop();
               GoRouter.of(context).go(

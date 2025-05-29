@@ -1,5 +1,6 @@
 // screens/home_page.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 // import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 // import 'package:plant_monitor_app/services/auth_service.dart';
 // import 'package:plant_monitor_app/api_manager.dart';
@@ -8,6 +9,7 @@ import 'package:stacy_frontend/src/services/logger.dart';
 import 'package:stacy_frontend/src/utilities/manager/api_manager.dart';
 import 'package:stacy_frontend/src/widgets/home/home_no_plants_view.dart';
 import 'package:stacy_frontend/src/widgets/home/home_show_plants.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
 
 // ignore: must_be_immutable
 class HomeView extends StatefulWidget {
@@ -22,12 +24,20 @@ class HomeView extends StatefulWidget {
 
 class _HomeViewState extends State<HomeView> {
   late Future<List<Plant>> _plantsFuture;
-  final PageController _pageController = PageController();
+  late PageController _pageController;
+
+  final String _webSocketUrl = dotenv.env['WEBSOCKET_URL']!;
+  List<Map<String, dynamic>> _weatherData = [];
+  WebSocketChannel? _channel;
+  String _connectionStatus = "Connecting...";
+  bool _isConnected = false;
 
   @override
   void initState() {
     super.initState();
+
     _plantsFuture = ApiManager.getUserPlants();
+    _pageController = PageController(initialPage: widget.currentPage);
 
     _pageController.addListener(() {
       setState(() {

@@ -1,8 +1,10 @@
 from time import sleep, time
 import requests
 
+baseUrl = "http://172.20.10.2:3001"
+
 def createUser():
-    url = "http://192.168.45.162:3001/users"
+    url = f"{baseUrl}/users"
     rand_username = "user" + str(int(time()))
     rand_email = "email" + str(int(time())) + "@danlevy.ca"
     rand_pwd = "passwd" + str(int(time()))
@@ -27,7 +29,7 @@ def createUser():
         print("An error occurred:", e)
 
 def createPlant(uid, device_id, plant_name):
-    url = "http://127.0.0.1:3001/plants"
+    url = f"{baseUrl}/plants"
     headers = {
             "Content-Type": "application/json",
             "Authorization": "Bearer BEARER_TOKEN",
@@ -48,7 +50,7 @@ def createPlant(uid, device_id, plant_name):
         print("An error occurred:", e)
   
 def createPlantData(uid, device_id):
-    url = "http://127.0.0.1:3001/weather"
+    url = f"{baseUrl}/weather"
     headers = {
         "Content-Type": "application/json",
         "Authorization": "Bearer BEARER_TOKEN",
@@ -76,7 +78,7 @@ def createPlantData(uid, device_id):
         print("An error occurred:", e)
 
 def getPlantsFromUser(uid):
-    url = f"http://192.168.45.162:3001/users/{uid}/plants"
+    url = f"{baseUrl}/users/{uid}/plants"
     headers = {
         "Content-Type": "application/json",
         "Authorization": "Bearer BEARER_TOKEN",
@@ -98,10 +100,10 @@ if __name__ == "__main__":
     plant_name = "Aloe"
     
     # uid = createUser()
-    # sleep(1)
+    sleep(1)
     # createPlant(uid, device_id, plant_name)
     # sleep(1)
     # for _ in range(5):
-    #     createPlantData(uid, device_id)
+    createPlantData(uid, device_id)
     #     sleep(1)
-    getPlantsFromUser(uid)
+    # getPlantsFromUser(uid)

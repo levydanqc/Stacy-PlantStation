@@ -12,6 +12,7 @@ import 'package:stacy_frontend/src/widgets/plant_card.dart';
 
 Widget buildPlantsDisplayView(BuildContext context, List<Plant> plants,
     PageController pageController, int currentPage) {
+  log.info('Building Plants Display View with currentPage: $currentPage');
   return Scaffold(
     appBar: AppBar(
       backgroundColor: bgColor,

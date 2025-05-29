@@ -29,8 +29,13 @@ final GoRouter router = GoRouter(
         GoRoute(
           path: HomeView.routeName,
           builder: (BuildContext context, GoRouterState state) {
+            log.fine('Extra data: ${state.extra}');
+            final index = state.extra != null ? state.extra as int : 0;
+
+            log.info('Navigating to HomeView with index: $index');
+
             return HomeView(
-              currentPage: state.extra != null ? state.extra as int : 0,
+              currentPage: index,
             );
           },
         ),
@@ -56,9 +61,14 @@ final GoRouter router = GoRouter(
           path: PlantSelectorView.routeName,
           // add an animation, slide from the bottom
           pageBuilder: (BuildContext context, GoRouterState state) {
-            final extra = state.extra as Map<String, dynamic>?;
-            final plants = extra?['plants'] as List<Plant>? ?? [];
-            final currentPage = extra?['currentPage'] as int? ?? 0;
+            List<Plant> plants = <Plant>[];
+            int currentPage = 0;
+
+            if (state.extra != null) {
+              final extra = state.extra as Map<String, dynamic>?;
+              plants = extra?['plants'] as List<Plant>? ?? [];
+              currentPage = extra?['currentPage'] as int? ?? 0;
+            }
 
             return CustomTransitionPage(
               key: state.pageKey,
