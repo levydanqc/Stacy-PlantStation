@@ -1,7 +1,3 @@
-// Displays the users plants with minimal plant data in a list
-// Go to HomeView page when clicking on a plant and pass the parameter
-// of the index of the plant selected
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stacy_frontend/src/models/plant.dart';

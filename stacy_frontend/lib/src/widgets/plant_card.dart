@@ -34,15 +34,6 @@ class PlantCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                // ClipRRect(
-                //   borderRadius: BorderRadius.circular(15),
-                //   child: Image.asset(
-                //     plant.imageUrl,
-                //     width: 100,
-                //     height: 100,
-                //     fit: BoxFit.cover,
-                //   ),
-                // ),
                 const SizedBox(width: 15),
                 Expanded(
                   child: Column(
@@ -59,42 +50,13 @@ class PlantCard extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(width: 8),
-                          // Icon(
-                          //   plant.healthPercentage > 70
-                          //       ? Icons.check_circle_rounded
-                          //       : Icons.warning_rounded,
-                          //   color: plant.healthPercentage > 70
-                          //       ? Colors.green
-                          //       : Colors.amber,
-                          //   size: 20,
-                          // ),
                         ],
                       ),
-                      const SizedBox(height: 5),
-                      // Text(
-                      //   plant.scientificName,
-                      //   style: TextStyle(
-                      //     fontSize: 16,
-                      //     color: Colors.grey.shade600,
-                      //   ),
-                      // ),
-                      // const SizedBox(height: 15),
-                      // _buildProgressBar(
-                      //   label: 'Health',
-                      //   value: plant.healthPercentage,
-                      //   color: Colors.green.shade400,
-                      // ),
-                      // const SizedBox(height: 10),
-                      // _buildProgressBar(
-                      //   label: 'Water',
-                      //   value: plant.wateringLevel,
-                      //   color: Colors.blue.shade400,
-                      // ),
+                      const SizedBox(height: 5)
                     ],
                   ),
                 ),
                 const SizedBox(width: 10),
-                // Three dots icon for more options, similar to UI
                 Align(
                   alignment: Alignment.topRight,
                   child: IconButton(
@@ -108,7 +70,6 @@ class PlantCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 20),
-            // Plant Indicators section, inspired by detail view
             Text(
               'PLANT\'S INDICATORS',
               style: TextStyle(
@@ -125,12 +86,9 @@ class PlantCard extends StatelessWidget {
                     '${plant.plantData.last.temperature}°C', Colors.red),
                 _buildIndicatorItem(Icons.water_drop, 'Humidity',
                     '${plant.plantData.last.humidity}%', Colors.blue),
-                // _buildIndicatorItem(Icons.light_mode, 'Light',
-                //     '${plant.plantData.first.moisture}%', Colors.orange),
               ],
             ),
             const SizedBox(height: 20),
-            // Watering Schedule, inspired by detail view
             Text(
               'WATERING SCHEDULE',
               style: TextStyle(
@@ -169,13 +127,11 @@ class PlantCard extends StatelessWidget {
   }
 
   Widget _buildWateringSchedule() {
-    // This is a simplified representation based on the UI.
-    // In a real app, this would be dynamic based on plant's actual schedule.
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
         _buildDayCircle('M', false),
-        _buildDayCircle('T', true), // Highlighted for today/next watering
+        _buildDayCircle('T', true),
         _buildDayCircle('W', false),
         _buildDayCircle('T', false),
         _buildDayCircle('F', false),

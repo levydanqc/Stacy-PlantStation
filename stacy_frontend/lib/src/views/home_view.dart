@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:stacy_frontend/src/models/plant.dart';
 import 'package:stacy_frontend/src/models/plant_data.dart';
@@ -121,8 +119,7 @@ class _HomeViewState extends State<HomeView> {
             onPressed: () {
               // Retry connection logic
               _webSocketService.connect();
-              setState(() {
-              });
+              setState(() {});
             },
             child: Text('Retry Connection'),
           ),
