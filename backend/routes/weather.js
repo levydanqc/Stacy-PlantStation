@@ -29,15 +29,17 @@ const weatherRoutes = (app, clients) => {
 
     try {
       const plantDataObject = PlantData.fromObject(rawDataFromDevice);
-      // Make sure removing this does not break anything
-      // const cleanedPlantData = plantDataObject.toObject();
 
       database
         .storePlantData(plantDataObject, device_id, uid)
-        .then(() => {
+        .then((plant) => {
+          console.log(`Data stored successfully: `, plant);
           broadcast(
             clients,
-            JSON.stringify({ type: 'update', ...plantDataObject }),
+            JSON.stringify({
+              type: 'update',
+              plants: plant,
+            }),
             uid
           );
           return res

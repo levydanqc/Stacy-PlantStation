@@ -1,15 +1,13 @@
-// screens/home_page.dart
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-// import 'package:smooth_page_indicator/smooth_page_indicator.dart';
-// import 'package:plant_monitor_app/services/auth_service.dart';
-// import 'package:plant_monitor_app/api_manager.dart';
 import 'package:stacy_frontend/src/models/plant.dart';
+import 'package:stacy_frontend/src/models/plant_data.dart';
 import 'package:stacy_frontend/src/services/logger.dart';
+import 'package:stacy_frontend/src/services/websocket.dart';
 import 'package:stacy_frontend/src/utilities/manager/api_manager.dart';
 import 'package:stacy_frontend/src/widgets/home/home_no_plants_view.dart';
 import 'package:stacy_frontend/src/widgets/home/home_show_plants.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
 
 // ignore: must_be_immutable
 class HomeView extends StatefulWidget {
@@ -26,11 +24,8 @@ class _HomeViewState extends State<HomeView> {
   late Future<List<Plant>> _plantsFuture;
   late PageController _pageController;
 
-  final String _webSocketUrl = dotenv.env['WEBSOCKET_URL']!;
-  List<Map<String, dynamic>> _weatherData = [];
-  WebSocketChannel? _channel;
-  String _connectionStatus = "Connecting...";
-  bool _isConnected = false;
+  final WebSocketService _webSocketService = WebSocketService();
+  final List<Plant> _weatherData = [];
 
   @override
   void initState() {
@@ -43,6 +38,48 @@ class _HomeViewState extends State<HomeView> {
       setState(() {
         widget.currentPage = _pageController.page!.round();
       });
+    });
+
+    _webSocketService.initSetState(setState);
+    _webSocketService.connect();
+    _subscribeToWebSocketService();
+  }
+
+  void _subscribeToWebSocketService() {
+    _webSocketService.dataStream.listen((data) {
+      if (mounted) {
+        // Only update state if the widget is still in the tree
+        // Update weather data.
+        if (data.containsKey('type')) {
+          if (data['type'] == 'initial_data') {
+            setState(() {
+              _weatherData.clear();
+              _weatherData.addAll((data['plants'] as List)
+                  .map((plant) => Plant.fromJson(plant))
+                  .toList());
+            });
+          } else if (data['type'] == 'update') {
+            setState(() {
+              final plantName = data['plants']['plant_name'];
+              final existingPlantIndex = _weatherData
+                  .indexWhere((plant) => plant.plantName == plantName);
+              if (existingPlantIndex != -1) {
+                _weatherData[existingPlantIndex].plantData.add(
+                      PlantData.fromJson(data['plants']['plant_data']),
+                    );
+              } else {
+                log.severe("Received update for unknown plant: $plantName");
+              }
+            });
+          } else {
+            log.warning("Received unknown data type: ${data['type']}");
+            return;
+          }
+        } else {
+          log.warning("Received unexpected data format: $data");
+          return;
+        }
+      }
     });
   }
 
@@ -59,139 +96,45 @@ class _HomeViewState extends State<HomeView> {
 
   @override
   Widget build(BuildContext context) {
+    log.fine('Building HomeView');
     return SafeArea(
-        child: FutureBuilder<List<Plant>>(
-      future: _plantsFuture,
-      builder: (context, snapshot) {
-        log.fine('FutureBuilder state: ${snapshot.connectionState}');
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(
-            child: CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.teal.shade600),
-            ),
-          );
-        } else if (snapshot.hasError) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.error_outline, color: Colors.red, size: 50),
-                const SizedBox(height: 10),
-                Text('Error loading plants: ${snapshot.error}'),
-                const SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      _plantsFuture =
-                          ApiManager.getUserPlants(); // Retry fetching
-                    });
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.teal,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8)),
-                  ),
-                  child: const Text('Retry',
-                      style: TextStyle(color: Colors.white)),
-                ),
-              ],
-            ),
-          );
-        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return buildNoPlantsView(context);
-        } else {
-          final plants = snapshot.data!;
-          return buildPlantsDisplayView(
-              context, plants, _pageController, widget.currentPage);
-        }
-      },
-    )
-        // child: Scaffold(
-        //   backgroundColor: Colors.white,
-        //   appBar: AppBar(
-        //     backgroundColor: Colors.white,
-        //     elevation: 0,
-        //     leading: IconButton(
-        //       icon: Icon(Icons.menu, color: Colors.grey.shade800),
-        //       onPressed: () => _buildMenu(context),
-        //     ),
-        //     title: Text(
-        //       'My Plants',
-        //       style: TextStyle(
-        //         color: Colors.grey.shade800,
-        //         fontWeight: FontWeight.bold,
-        //         fontSize: 20,
-        //       ),
-        //     ),
-        //     centerTitle: false,
-        //     actions: [
-        //       IconButton(
-        //         icon: Icon(Icons.notifications_none, color: Colors.grey.shade800),
-        //         onPressed: () {
-        //           // TODO: Navigate to notifications
-        //           log.info('Notifications button pressed');
-        //         },
-        //       ),
-        //       IconButton(
-        //         icon: const Icon(Icons.logout, color: Colors.grey),
-        //         onPressed: () async {
-        //           await StorageManager().logout();
-        //           GoRouter.of(context).go(WelcomeView.routeName);
-        //         },
-        //       ),
-        //     ],
-        //   ),
-        //   body: FutureBuilder<List<Plant>>(
-        //     future: _plantsFuture,
-        //     builder: (context, snapshot) {
-        //       log.fine('FutureBuilder state: ${snapshot.connectionState}');
-        //       if (snapshot.connectionState == ConnectionState.waiting) {
-        //         return Center(
-        //           child: CircularProgressIndicator(
-        //             valueColor:
-        //                 AlwaysStoppedAnimation<Color>(Colors.teal.shade600),
-        //           ),
-        //         );
-        //       } else if (snapshot.hasError) {
-        //         return Center(
-        //           child: Column(
-        //             mainAxisAlignment: MainAxisAlignment.center,
-        //             children: [
-        //               Icon(Icons.error_outline, color: Colors.red, size: 50),
-        //               const SizedBox(height: 10),
-        //               Text('Error loading plants: ${snapshot.error}'),
-        //               const SizedBox(height: 20),
-        //               ElevatedButton(
-        //                 onPressed: () {
-        //                   setState(() {
-        //                     _plantsFuture =
-        //                         ApiManager.getUserPlants(); // Retry fetching
-        //                   });
-        //                 },
-        //                 style: ElevatedButton.styleFrom(
-        //                   backgroundColor: Colors.teal,
-        //                   shape: RoundedRectangleBorder(
-        //                       borderRadius: BorderRadius.circular(8)),
-        //                 ),
-        //                 child: const Text('Retry',
-        //                     style: TextStyle(color: Colors.white)),
-        //               ),
-        //             ],
-        //           ),
-        //         );
-        //       } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-        //         // No plants in the database
-        //         return _buildNoPlantsView(context);
-        //       } else {
-        //         // Plants exist, display them
-        //         final plants = snapshot.data!;
-        //         log.info('Plants loaded successfully: ${plants.length}');
-        //         log.info('Plants: ${plants.map((p) => p.plantName).join(', ')}');
-        //         return _buildPlantsDisplayView(context, plants);
-        //       }
-        //     },
-        //   ),
-        // ),
-        );
+      child: Builder(
+        builder: _buildView,
+      ),
+    );
+  }
+
+  Widget _buildView(context) {
+    log.finest('Run HomeView _buildView');
+
+    if (_webSocketService.isConnected && _weatherData.isNotEmpty) {
+      return buildPlantsDisplayView(
+          context, _weatherData, _pageController, widget.currentPage);
+    } else if (_webSocketService.isConnected && _weatherData.isEmpty) {
+      return buildNoPlantsView(context);
+    } else if (!_webSocketService.isConnected) {
+      return Column(
+        children: [
+          Text('Attempting to connect to the server...'),
+          SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: () {
+              // Retry connection logic
+              _webSocketService.connect();
+              setState(() {
+              });
+            },
+            child: Text('Retry Connection'),
+          ),
+        ],
+      );
+    } else {
+      // Show loading indicator while connected but waiting for first data
+      return Column(children: [
+        Text('Connected. Waiting for data...'),
+        SizedBox(height: 20),
+        CircularProgressIndicator(),
+      ]);
+    }
   }
 }

@@ -6,6 +6,7 @@ import 'package:stacy_frontend/src/utilities/manager/storage_manager.dart';
 // import 'package:stacy_frontend/src/settings/settings_view.dart';
 import 'package:stacy_frontend/src/views/home_view.dart';
 import 'package:stacy_frontend/src/views/plant_selector_view.dart';
+import 'package:stacy_frontend/src/views/weather_page.dart';
 import 'package:stacy_frontend/src/views/weather_view.dart';
 import 'package:stacy_frontend/src/views/welcome/loading_view.dart';
 import 'package:stacy_frontend/src/views/welcome/login_view.dart';
@@ -51,12 +52,12 @@ final GoRouter router = GoRouter(
             return const SignUpView();
           },
         ),
-        GoRoute(
-          path: WeatherView.routeName,
-          builder: (BuildContext context, GoRouterState state) {
-            return const WeatherView();
-          },
-        ),
+        // GoRoute(
+        //   path: WeatherView.routeName,
+        //   builder: (BuildContext context, GoRouterState state) {
+        //     return const WeatherView();
+        //   },
+        // ),
         GoRoute(
           path: PlantSelectorView.routeName,
           // add an animation, slide from the bottom
@@ -86,7 +87,13 @@ final GoRouter router = GoRouter(
               },
             );
           },
-        )
+        ),
+        // GoRoute(
+        //   path: WeatherPage.routeName,
+        //   builder: (BuildContext context, GoRouterState state) {
+        //     return const WeatherPage();
+        //   },
+        // )
       ],
     ),
   ],

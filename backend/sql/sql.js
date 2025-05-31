@@ -15,8 +15,8 @@ const addPlantSQL = `
 INSERT INTO plants (user_id, device_id, plant_name) VALUES (?, ?, ?);
 `;
 
-const getPlantIdFromUserIdAndDeviceIdSQL = `
-SELECT plant_id FROM plants WHERE user_id = ? AND device_id = ?;
+const getPlantFromUserIdAndDeviceIdSQL = `
+SELECT * FROM plants WHERE user_id = ? AND device_id = ?;
 `;
 
 const getPlantIdFromUserIdSQL = `
@@ -24,7 +24,7 @@ SELECT plant_id FROM plants WHERE user_id = ?;
 `;
 
 const getDataByPlantIdSQL = `
-SELECT * FROM plant_data WHERE plant_id = ? ORDER BY timestamp DESC LIMIT 100;
+SELECT * FROM plant_data WHERE plant_id = ? ORDER BY timestamp ASC LIMIT 100;
 `;
 
 const getUserByEmailSQL = `
@@ -43,9 +43,21 @@ const getPlantsByUserIdSQL = `
 SELECT * FROM plants WHERE user_id = ?;
 `;
 
+const getPlantByDeviceIdSQL = `
+SELECT * FROM plants WHERE device_id = ?;
+`;
+
+const getPlantByIdSQL = `
+SELECT * FROM plants WHERE plant_id = ?;
+`;
+
+const getDataByRowIdSQL = `
+SELECT * FROM plant_data WHERE data_id = ?;
+`;
+
 module.exports = {
   addPlantDataSQL,
-  getPlantIdFromUserIdAndDeviceIdSQL,
+  getPlantFromUserIdAndDeviceIdSQL,
   getPlantIdFromUserIdSQL,
   getDataByPlantIdSQL,
   addUserSQL,
@@ -55,4 +67,7 @@ module.exports = {
   getUserPasswordSQL,
   getUserByUIDSQL,
   getPlantsByUserIdSQL,
+  getPlantByDeviceIdSQL,
+  getPlantByIdSQL,
+  getDataByRowIdSQL
 };

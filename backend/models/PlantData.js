@@ -60,7 +60,7 @@ class PlantData {
    * This is useful for sending as JSON or inserting into databases.
    * @returns {object} Plain object with weather data.
    */
-  toObject() {
+  toObject([timestamp]) {
     const obj = {
       temperature: this.temperature,
       humidity: this.humidity,
@@ -70,6 +70,9 @@ class PlantData {
       batteryVoltage: this.batteryVoltage,
       batteryPercentage: this.batteryPercentage,
     };
+    if (timestamp) {
+      obj.timestamp = timestamp;
+    }
     return obj;
   }
 

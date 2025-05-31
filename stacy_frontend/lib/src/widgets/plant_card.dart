@@ -122,9 +122,9 @@ class PlantCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 _buildIndicatorItem(Icons.thermostat, 'Temp',
-                    '${plant.plantData.first.temperature}°C', Colors.red),
+                    '${plant.plantData.last.temperature}°C', Colors.red),
                 _buildIndicatorItem(Icons.water_drop, 'Humidity',
-                    '${plant.plantData.first.humidity}%', Colors.blue),
+                    '${plant.plantData.last.humidity}%', Colors.blue),
                 // _buildIndicatorItem(Icons.light_mode, 'Light',
                 //     '${plant.plantData.first.moisture}%', Colors.orange),
               ],

@@ -18,7 +18,7 @@ void setupLogger() {
     } else if (rec.level >= Level.INFO) {
       print('\x1B[34m$message\x1B[0m'); // Blue for INFO
     } else if (rec.level >= Level.FINE) {
-      print('\x1B[32m$message\x1B[0m'); // Green for FINE
+      print('\x1B[36m$message\x1B[0m'); // Cyan for FINE
     } else {
       print(message);
     }

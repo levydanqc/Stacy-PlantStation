@@ -99,24 +99,19 @@ function storePlantData(weatherData, device_id, uid) {
       return reject(new Error('uid is required'));
     }
 
-    getPlantIdByUIDAndDeviceId(uid, device_id)
-      .then((plant_id) => {
-        if (!plant_id) {
+    getPlantByUIDAndDeviceId(uid, device_id)
+      .then((plant) => {
+        if (!plant) {
           console.error(
-            `Error: No plant_id found for device_id "${device_id}" and uid "${uid}"`
+            `Error: No plant found for device_id "${device_id}" and uid "${uid}"`
           );
-          return reject(new Error('plant_id is required'));
+          return reject(new Error('plant is required'));
         }
-
-        console.log(
-          `Obtained plant_id "${plant_id}" for device_id "${device_id}" and uid "${uid}"`
-        );
-
-        return new Promise((resolve, reject) => {
+        return new Promise((resolveInsertAndFetch, rejectInsertAndFetch) => {
           db.run(
             sql.addPlantDataSQL,
             [
-              plant_id,
+              plant.plant_id,
               temperature,
               humidity,
               moisture,
@@ -131,20 +126,45 @@ function storePlantData(weatherData, device_id, uid) {
                   'Error inserting data into database:',
                   err.message
                 );
-                reject(err);
+                rejectInsertAndFetch(err);
               } else {
                 console.log(
                   `A row has been inserted with rowid ${this.lastID} for user "${uid}"`
                 );
-                resolve();
+                db.get(sql.getDataByRowIdSQL, [this.lastID], (err, row) => {
+                  if (err) {
+                    console.error(
+                      'Error fetching plant data by ID:',
+                      err.message
+                    );
+                    rejectInsertAndFetch(err);
+                  } else if (row) {
+                    resolveInsertAndFetch({
+                      plant_name: plant.plant_name,
+                      plant_data: new PlantData(
+                        row.temperature,
+                        row.humidity,
+                        row.moisture,
+                        row.pressure,
+                        row.hic,
+                        row.batteryVoltage,
+                        row.batteryPercentage
+                      ).toObject([row.timestamp]),
+                    });
+                  } else {
+                    rejectInsertAndFetch(new Error('Plant data not found'));
+                  }
+                });
               }
             }
           );
         });
       })
-      .then(() => resolve())
+      .then((insertedRowData) => {
+        resolve(insertedRowData);
+      })
       .catch((error) => {
-        console.error('Error storing sensor data:', error);
+        console.error('Error in storePlantData execution chain:', error);
         reject(error);
       });
   });
@@ -156,7 +176,7 @@ function storePlantData(weatherData, device_id, uid) {
  * @param {string} device_id - The ID of the device (MAC address).
  * @returns {Promise<string>} A promise that resolves with the plant ID.
  */
-function getPlantIdByUIDAndDeviceId(uid, device_id) {
+function getPlantByUIDAndDeviceId(uid, device_id) {
   return new Promise((resolve, reject) => {
     db.get(sql.getUserByUIDSQL, [uid], (err, row) => {
       if (err) {
@@ -164,14 +184,14 @@ function getPlantIdByUIDAndDeviceId(uid, device_id) {
         reject(err);
       } else if (row) {
         db.get(
-          sql.getPlantIdFromUserIdAndDeviceIdSQL,
+          sql.getPlantFromUserIdAndDeviceIdSQL,
           [row.user_id, device_id],
           (err, row) => {
             if (err) {
               console.error('Error fetching plant_id:', err.message);
               reject(err);
             } else if (row) {
-              resolve(row.plant_id);
+              resolve(row);
             } else {
               resolve(null);
             }
@@ -416,6 +436,21 @@ function getPlantsDataByUserUID(uid) {
   });
 }
 
+function getPlantByDeviceID(device_id) {
+  return new Promise((resolve, reject) => {
+    db.get(sql.getPlantByDeviceIdSQL, [device_id], (err, row) => {
+      if (err) {
+        console.error('Error fetching plant by device ID:', err.message);
+        reject(err);
+      } else if (row) {
+        resolve(row);
+      } else {
+        resolve(null);
+      }
+    });
+  });
+}
+
 process.on('SIGINT', () => {
   db.close((err) => {
     if (err) {
@@ -435,4 +470,5 @@ module.exports = {
   getUserByEmail,
   verifyUserPassword,
   getPlantsDataByUserUID,
+  getPlantByDeviceID,
 };

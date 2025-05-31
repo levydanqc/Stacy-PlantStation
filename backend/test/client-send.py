@@ -1,7 +1,7 @@
 from time import sleep, time
 import requests
 
-baseUrl = "http://172.20.10.2:3001"
+baseUrl = "http://127.0.0.1:3001"
 
 def createUser():
     url = f"{baseUrl}/users"

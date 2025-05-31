@@ -17,9 +17,14 @@ const webSocket = (wss, clients) => {
           ws.off('message', arguments.callee);
 
           database
-            .getDataByUID(uid)
-            .then((plantData) => {
-              ws.send(JSON.stringify(plantData));
+            .getPlantsDataByUserUID(uid)
+            .then((plants_data) => {
+              ws.send(
+                JSON.stringify({
+                  type: 'initial_data',
+                  plants: plants_data,
+                })
+              );
             })
             .catch((error) => {
               console.error(`Error fetching data for user ${uid}:`, error);

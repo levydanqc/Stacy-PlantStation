@@ -16,8 +16,6 @@ class PlantSelectorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Build a list of plant name with temperature and humidity only
-    // when clicking on a plant, go to HomeView and pass the plant index
     return Scaffold(
       appBar: AppBar(
         title: Text(plants[currentPage].plantName),
@@ -30,7 +28,7 @@ class PlantSelectorView extends StatelessWidget {
           return ListTile(
             title: Text(plant.plantName),
             subtitle: Text(
-                'Temperature: ${plant.plantData.first.temperature}°C, Humidity: ${plant.plantData.first.humidity}%'),
+                'Temperature: ${plant.plantData.last.temperature}°C, Humidity: ${plant.plantData.last.humidity}%'),
             onTap: () {
               Navigator.of(context).pop();
               GoRouter.of(context).go(
