@@ -4,7 +4,6 @@ import 'package:stacy_frontend/src/models/plant.dart';
 import 'package:stacy_frontend/src/services/logger.dart';
 import 'package:stacy_frontend/src/utilities/manager/storage_manager.dart';
 import 'package:stacy_frontend/src/views/home_view.dart';
-import 'package:stacy_frontend/src/views/plant_selector_view.dart';
 import 'package:stacy_frontend/src/views/welcome/loading_view.dart';
 import 'package:stacy_frontend/src/views/welcome/login_view.dart';
 import 'package:stacy_frontend/src/views/welcome/signup_view.dart';
@@ -25,19 +24,6 @@ final GoRouter router = GoRouter(
           },
         ),
         GoRoute(
-          path: HomeView.routeName,
-          builder: (BuildContext context, GoRouterState state) {
-            log.fine('Extra data: ${state.extra}');
-            final index = state.extra != null ? state.extra as int : 0;
-
-            log.info('Navigating to HomeView with index: $index');
-
-            return HomeView(
-              currentPage: index,
-            );
-          },
-        ),
-        GoRoute(
           path: LoginView.routeName,
           builder: (BuildContext context, GoRouterState state) {
             return const LoginView();
@@ -49,6 +35,25 @@ final GoRouter router = GoRouter(
             return const SignUpView();
           },
         ),
+        GoRoute(
+            path: HomeView.routeName,
+            redirect: (BuildContext context, GoRouterState state) {
+              if (state.fullPath == HomeView.routeName) {
+                log.fine(
+                    'Redirecting from ${state.fullPath} to ${HomeView.routeName}/0');
+                return '${HomeView.routeName}/0';
+              }
+              return null; // Otherwise, allow the route or its children to handle it
+            },
+            routes: [
+              GoRoute(
+                path: ':id',
+                builder: (BuildContext context, GoRouterState state) {
+                  final int id = int.tryParse(state.pathParameters['id']!) ?? 0;
+                  return HomeView(id: id);
+                },
+              )
+            ]),
         GoRoute(
           path: PlantSelectorView.routeName,
           // add an animation, slide from the bottom
@@ -83,10 +88,6 @@ final GoRouter router = GoRouter(
     ),
   ],
   redirect: (context, state) async {
-    if (state.uri.path == LoadingView.routeName) {
-      return null; // Laisser la LoadingView gérer la navigation
-    }
-
     final bool isAuthRoute = [
       LoadingView.routeName,
       WelcomeView.routeName,

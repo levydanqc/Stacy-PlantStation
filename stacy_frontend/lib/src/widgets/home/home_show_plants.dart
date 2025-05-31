@@ -5,13 +5,17 @@ import 'package:stacy_frontend/src/models/plant.dart';
 import 'package:stacy_frontend/src/services/logger.dart';
 import 'package:stacy_frontend/src/utilities/constants.dart';
 import 'package:stacy_frontend/src/utilities/manager/storage_manager.dart';
-import 'package:stacy_frontend/src/views/plant_selector_view.dart';
 import 'package:stacy_frontend/src/views/welcome/welcome_view.dart';
+import 'package:stacy_frontend/src/widgets/home/home_plant_selector_menu.dart';
 import 'package:stacy_frontend/src/widgets/home/home_settings_menu.dart';
 import 'package:stacy_frontend/src/widgets/plant_card.dart';
 
-Widget buildPlantsDisplayView(BuildContext context, List<Plant> plants,
-    PageController pageController, int currentPage) {
+Widget buildPlantsDisplayView(
+    BuildContext context,
+    List<Plant> plants,
+    PageController pageController,
+    int currentPage,
+    Function(int, [bool]) switchPlant) {
   log.info('Building Plants Display View with currentPage: $currentPage');
   return Scaffold(
     appBar: AppBar(
@@ -23,10 +27,7 @@ Widget buildPlantsDisplayView(BuildContext context, List<Plant> plants,
       ),
       title: TextButton.icon(
         // Go to PlantSelectorView and pass the plants and currentPage
-        onPressed: () => GoRouter.of(context).go(
-          PlantSelectorView.routeName,
-          extra: {'plants': plants, 'currentPage': currentPage},
-        ),
+        onPressed: () => buildPlantSelectorMenu(context, plants, switchPlant),
         label: Text(plants[currentPage].plantName),
         icon: Icon(Icons.keyboard_arrow_down_rounded,
             color: Colors.grey.shade800),

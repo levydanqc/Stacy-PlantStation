@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:stacy_frontend/src/models/plant.dart';
 import 'package:stacy_frontend/src/models/plant_data.dart';
 import 'package:stacy_frontend/src/services/logger.dart';
@@ -10,9 +11,9 @@ import 'package:stacy_frontend/src/widgets/home/home_show_plants.dart';
 // ignore: must_be_immutable
 class HomeView extends StatefulWidget {
   static const String routeName = '/home';
-  int currentPage = 0;
+  int id;
 
-  HomeView({super.key, this.currentPage = 0});
+  HomeView({super.key, required this.id});
 
   @override
   State<HomeView> createState() => _HomeViewState();
@@ -30,17 +31,35 @@ class _HomeViewState extends State<HomeView> {
     super.initState();
 
     _plantsFuture = ApiManager.getUserPlants();
-    _pageController = PageController(initialPage: widget.currentPage);
+    _pageController = PageController(initialPage: widget.id);
+    switchPlant(widget.id);
 
-    _pageController.addListener(() {
-      setState(() {
-        widget.currentPage = _pageController.page!.round();
-      });
-    });
+    _pageController
+        .addListener(() => switchPlant(_pageController.page!.round()));
+    // _pageController.addListener(() {
+    //   setState(() {
+    //     widget.id = _pageController.page!.round();
+    //   });
+    // });
 
     _webSocketService.initSetState(setState);
     _webSocketService.connect();
     _subscribeToWebSocketService();
+  }
+
+  void switchPlant(int index, [bool isManual = false]) {
+    log.fine('Switching to plant at index: $index');
+    if (index >= 0 && index < _weatherData.length) {
+      setState(() {
+        widget.id = index;
+        if (isManual) {
+          _pageController.jumpToPage(index);
+        }
+        context.go('${HomeView.routeName}/${widget.id}');
+      });
+    } else {
+      log.warning('Index out of bounds: $index');
+    }
   }
 
   void _subscribeToWebSocketService() {
@@ -94,7 +113,7 @@ class _HomeViewState extends State<HomeView> {
 
   @override
   Widget build(BuildContext context) {
-    log.fine('Building HomeView');
+    log.fine('Building HomeView with params: id: ${widget.id}');
     return SafeArea(
       child: Builder(
         builder: _buildView,
@@ -107,7 +126,7 @@ class _HomeViewState extends State<HomeView> {
 
     if (_webSocketService.isConnected && _weatherData.isNotEmpty) {
       return buildPlantsDisplayView(
-          context, _weatherData, _pageController, widget.currentPage);
+          context, _weatherData, _pageController, widget.id, switchPlant);
     } else if (_webSocketService.isConnected && _weatherData.isEmpty) {
       return buildNoPlantsView(context);
     } else if (!_webSocketService.isConnected) {
