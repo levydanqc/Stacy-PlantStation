@@ -36,13 +36,7 @@ class _HomeViewState extends State<HomeView> {
 
     _pageController
         .addListener(() => switchPlant(_pageController.page!.round()));
-    // _pageController.addListener(() {
-    //   setState(() {
-    //     widget.id = _pageController.page!.round();
-    //   });
-    // });
 
-    _webSocketService.initSetState(setState);
     _webSocketService.connect();
     _subscribeToWebSocketService();
   }
@@ -66,7 +60,6 @@ class _HomeViewState extends State<HomeView> {
     _webSocketService.dataStream.listen((data) {
       if (mounted) {
         // Only update state if the widget is still in the tree
-        // Update weather data.
         if (data.containsKey('type')) {
           if (data['type'] == 'initial_data') {
             setState(() {
@@ -103,6 +96,7 @@ class _HomeViewState extends State<HomeView> {
   @override
   void dispose() {
     _pageController.dispose();
+    _webSocketService.disconnect();
     super.dispose();
   }
 

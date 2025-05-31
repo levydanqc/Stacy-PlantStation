@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:stacy_frontend/src/models/plant.dart';
 import 'package:stacy_frontend/src/services/logger.dart';
 import 'package:stacy_frontend/src/utilities/manager/storage_manager.dart';
 import 'package:stacy_frontend/src/views/home_view.dart';
@@ -54,36 +53,6 @@ final GoRouter router = GoRouter(
                 },
               )
             ]),
-        GoRoute(
-          path: PlantSelectorView.routeName,
-          // add an animation, slide from the bottom
-          pageBuilder: (BuildContext context, GoRouterState state) {
-            List<Plant> plants = <Plant>[];
-            int currentPage = 0;
-
-            if (state.extra != null) {
-              final extra = state.extra as Map<String, dynamic>?;
-              plants = extra?['plants'] as List<Plant>? ?? [];
-              currentPage = extra?['currentPage'] as int? ?? 0;
-            }
-
-            return CustomTransitionPage(
-              key: state.pageKey,
-              child:
-                  PlantSelectorView(plants: plants, currentPage: currentPage),
-              transitionsBuilder:
-                  (context, animation, secondaryAnimation, child) {
-                return SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0, 1), // Start from the bottom
-                    end: Offset.zero,
-                  ).animate(animation),
-                  child: child,
-                );
-              },
-            );
-          },
-        ),
       ],
     ),
   ],

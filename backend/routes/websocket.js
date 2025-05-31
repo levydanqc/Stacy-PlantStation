@@ -13,6 +13,7 @@ const webSocket = (wss, clients) => {
         if (uid) {
           clients.add({ ws, uid });
           console.log(`Client associated with ID: ${uid}`);
+          console.log(`Total clients connected: ${clients.size}`);
 
           ws.off('message', arguments.callee);
 
@@ -45,7 +46,11 @@ const webSocket = (wss, clients) => {
 
     ws.on('close', () => {
       console.log('Client disconnected');
-      clients.delete(ws);
+      clients.forEach((client) => {
+        if (client.ws === ws) {
+          clients.delete(client);
+        }
+      });
     });
 
     ws.on('error', (error) => {

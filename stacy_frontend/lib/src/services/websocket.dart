@@ -1,4 +1,3 @@
-// services/websocket_service.dart
 import 'dart:async';
 import 'dart:convert';
 
@@ -11,9 +10,6 @@ class WebSocketService {
   static final WebSocketService _instance = WebSocketService._internal();
   factory WebSocketService() => _instance;
   WebSocketService._internal();
-
-  late Function setState;
-  void initSetState(initSetState) => setState = initSetState;
 
   final String _webSocketUrl = dotenv.env['WEBSOCKET_URL']!;
 
@@ -158,5 +154,8 @@ class WebSocketService {
     disconnect(); // Ensure channel is closed
     _dataController.close(); // Close the data stream
     _statusController.close(); // Close the status stream
+    _reconnectTimer?.cancel(); // Cancel any pending reconnect attempts
+    _channel = null; // Clear the channel reference
+    _isConnected = false; // Reset connection state
   }
 }
