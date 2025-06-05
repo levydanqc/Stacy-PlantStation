@@ -29,6 +29,7 @@ class _HomeViewState extends State<HomeView> {
   @override
   void initState() {
     super.initState();
+    log.fine('Initializing HomeView with id: ${widget.id}');
 
     _plantsFuture = ApiManager.getUserPlants();
     _pageController = PageController(initialPage: widget.id);

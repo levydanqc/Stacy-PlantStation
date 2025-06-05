@@ -151,11 +151,11 @@ class WebSocketService {
   // Dispose method to be called when the service is no longer needed (e.g., app shutdown)
   void dispose() {
     log.info("Disposing WebSocketService.");
-    disconnect(); // Ensure channel is closed
-    _dataController.close(); // Close the data stream
-    _statusController.close(); // Close the status stream
-    _reconnectTimer?.cancel(); // Cancel any pending reconnect attempts
-    _channel = null; // Clear the channel reference
-    _isConnected = false; // Reset connection state
+    disconnect();
+    _dataController.close();
+    _statusController.close();
+    _reconnectTimer?.cancel();
+    _channel = null;
+    _isConnected = false;
   }
 }

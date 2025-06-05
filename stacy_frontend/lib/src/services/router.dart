@@ -15,50 +15,53 @@ final GoRouter router = GoRouter(
       builder: (BuildContext context, GoRouterState state) {
         return const LoadingView();
       },
-      routes: <RouteBase>[
-        GoRoute(
-          path: WelcomeView.routeName,
-          builder: (BuildContext context, GoRouterState state) {
-            return const WelcomeView();
-          },
-        ),
-        GoRoute(
-          path: LoginView.routeName,
-          builder: (BuildContext context, GoRouterState state) {
-            return const LoginView();
-          },
-        ),
-        GoRoute(
-          path: SignUpView.routeName,
-          builder: (BuildContext context, GoRouterState state) {
-            return const SignUpView();
-          },
-        ),
-        GoRoute(
-            path: HomeView.routeName,
-            redirect: (BuildContext context, GoRouterState state) {
-              if (state.fullPath == HomeView.routeName) {
-                log.fine(
-                    'Redirecting from ${state.fullPath} to ${HomeView.routeName}/0');
-                return '${HomeView.routeName}/0';
-              }
-              return null; // Otherwise, allow the route or its children to handle it
-            },
-            routes: [
-              GoRoute(
-                path: ':id',
-                builder: (BuildContext context, GoRouterState state) {
-                  final int id = int.tryParse(state.pathParameters['id']!) ?? 0;
-                  return HomeView(id: id);
-                },
-              )
-            ]),
-      ],
     ),
+    GoRoute(
+      path: WelcomeView.routeName,
+      builder: (BuildContext context, GoRouterState state) {
+        return const WelcomeView();
+      },
+    ),
+    GoRoute(
+      path: LoginView.routeName,
+      builder: (BuildContext context, GoRouterState state) {
+        return const LoginView();
+      },
+    ),
+    GoRoute(
+      path: SignUpView.routeName,
+      builder: (BuildContext context, GoRouterState state) {
+        return const SignUpView();
+      },
+    ),
+    GoRoute(
+        path: HomeView.routeName,
+        redirect: (BuildContext context, GoRouterState state) {
+          if (state.fullPath == HomeView.routeName) {
+            log.fine(
+                'Redirecting from ${state.fullPath} to ${HomeView.routeName}/0');
+            return '${HomeView.routeName}/0';
+          }
+          return null; // Otherwise, allow the route or its children to handle it
+        },
+        routes: [
+          GoRoute(
+            path: ':id',
+            builder: (BuildContext context, GoRouterState state) {
+              final int id = int.tryParse(state.pathParameters['id']!) ?? 0;
+              log.shout('Navigating to HomeView with id: $id');
+              return HomeView(id: id);
+            },
+          ),
+        ]),
   ],
   redirect: (context, state) async {
+    if (state.uri.path == LoadingView.routeName) {
+      log.fine('Not redirecting from LoadingView');
+      return null;
+    }
+
     final bool isAuthRoute = [
-      LoadingView.routeName,
       WelcomeView.routeName,
       LoginView.routeName,
       SignUpView.routeName,
@@ -85,8 +88,15 @@ final GoRouter router = GoRouter(
     // If no redirect is needed, return null to let GoRouter continue to the requested path.
     return null;
   },
-  errorBuilder: (context, state) => Scaffold(
-    appBar: AppBar(title: const Text('Error')),
-    body: Center(child: Text('Page not found: ${state.uri.path}')),
-  ),
+  errorBuilder: (BuildContext context, GoRouterState state) {
+    log.severe('Error navigating to ${state.uri.path}: ${state.error}');
+    return Scaffold(
+      body: Center(
+        child: Text(
+          'Error: ${state.error}',
+          style: const TextStyle(fontSize: 24, color: Colors.red),
+        ),
+      ),
+    );
+  },
 );
