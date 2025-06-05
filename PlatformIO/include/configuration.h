@@ -13,6 +13,8 @@
 #define DELAY_SHORT 25
 #define uS_TO_S_FACTOR 1000000ULL
 #define TIME_TO_SLEEP 5
+#define AP_SSID "Stacy PlantStation"
+#define DNS_PORT 53
 
 // Variables
 typedef struct SensorData {
