@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:stacy_frontend/src/utilities/constants.dart';
+import 'package:stacy_frontend/src/utilities/graph_axis_titles.dart';
 
 class PlantGraph extends StatelessWidget {
   const PlantGraph({
@@ -18,76 +19,83 @@ class PlantGraph extends StatelessWidget {
   final List<FlSpot> points;
 
   Widget bottomTitleWidgets(double value, TitleMeta meta) {
-    String text;
-    switch (value.toInt()) {
-      case 0:
-        text = 'Jan';
-        break;
-      case 1:
-        text = 'Feb';
-        break;
-      case 2:
-        text = 'Mar';
-        break;
-      case 3:
-        text = 'Apr';
-        break;
-      case 4:
-        text = 'May';
-        break;
-      case 5:
-        text = 'Jun';
-        break;
-      case 6:
-        text = 'Jul';
-        break;
-      case 7:
-        text = 'Aug';
-        break;
-      case 8:
-        text = 'Sep';
-        break;
-      case 9:
-        text = 'Oct';
-        break;
-      case 10:
-        text = 'Nov';
-        break;
-      case 11:
-        text = 'Dec';
-        break;
-      default:
-        return const SizedBox.shrink();
-    }
-
-    return SideTitleWidget(
-      meta: meta,
-      space: 4,
-      child: Text(
-        text,
-        style: TextStyle(
-          fontSize: 10,
-          color: blackColor,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
+    return graphBottomDatetimeConversion(value, meta);
   }
+  // switch (value.toInt()) {
+  //   case 0:
+  //     text = 'Jan';
+  //     break;
+  //   case 1:
+  //     text = 'Feb';
+  //     break;
+  //   case 2:
+  //     text = 'Mar';
+  //     break;
+  //   case 3:
+  //     text = 'Apr';
+  //     break;
+  //   case 4:
+  //     text = 'May';
+  //     break;
+  //   case 5:
+  //     text = 'Jun';
+  //     break;
+  //   case 6:
+  //     text = 'Jul';
+  //     break;
+  //   case 7:
+  //     text = 'Aug';
+  //     break;
+  //   case 8:
+  //     text = 'Sep';
+  //     break;
+  //   case 9:
+  //     text = 'Oct';
+  //     break;
+  //   case 10:
+  //     text = 'Nov';
+  //     break;
+  //   case 11:
+  //     text = 'Dec';
+  //     break;
+  //   default:
+  //     return const SizedBox.shrink();
+  // }
+  // return SideTitleWidget(
+  //   meta: meta,
+  //   space: 4,
+  //   child: Text(
+  //     text,
+  //     style: TextStyle(
+  //       fontSize: 10,
+  //       color: blackColor,
+  //       fontWeight: FontWeight.bold,
+  //     ),
+  //   ),
+  // );
+  // }
 
   Widget leftTitleWidgets(double value, TitleMeta meta) {
     TextStyle style = TextStyle(
       color: blackColor,
       fontSize: 12,
     );
+    // return nothing for odd values
+    if (value.toInt() % 2 != 0) {
+      return const SizedBox.shrink();
+    }
     return SideTitleWidget(
       meta: meta,
-      child: Text('\$ ${value + 0.5}', style: style),
+      child: Text(
+        value.toInt().toString(),
+        style: style,
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    const cutOffYValue = 5.0;
+    const cutOffYValue = 28.0;
 
     return AspectRatio(
       aspectRatio: 2,
@@ -109,13 +117,13 @@ class PlantGraph extends StatelessWidget {
                 color: mainLineColor,
                 belowBarData: BarAreaData(
                   show: true,
-                  color: belowLineColor,
+                  color: aboveLineColor.withAlpha(50),
                   cutOffY: cutOffYValue,
                   applyCutOffY: true,
                 ),
                 aboveBarData: BarAreaData(
                   show: true,
-                  color: aboveLineColor,
+                  color: belowLineColor.withAlpha(50),
                   cutOffY: cutOffYValue,
                   applyCutOffY: true,
                 ),
@@ -124,7 +132,10 @@ class PlantGraph extends StatelessWidget {
                 ),
               ),
             ],
-            minY: 0,
+            // set the minimum to the smallest y value minus 2
+            maxY: points.isNotEmpty
+                ? points.map((e) => e.y).reduce((a, b) => a > b ? a : b) + 2
+                : 0,
             titlesData: FlTitlesData(
               show: true,
               topTitles: const AxisTitles(
@@ -133,22 +144,22 @@ class PlantGraph extends StatelessWidget {
               rightTitles: const AxisTitles(
                 sideTitles: SideTitles(showTitles: false),
               ),
-              // bottomTitles: AxisTitles(
-              //   axisNameWidget: Text(
-              //     '2019',
-              //     style: TextStyle(
-              //       fontSize: 10,
-              //       color: blackColor,
-              //       fontWeight: FontWeight.bold,
-              //     ),
-              //   ),
-              //   sideTitles: SideTitles(
-              //     showTitles: true,
-              //     reservedSize: 18,
-              //     interval: 1,
-              //     getTitlesWidget: bottomTitleWidgets,
-              //   ),
-              // ),
+              bottomTitles: AxisTitles(
+                axisNameWidget: Text(
+                  '2019',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: blackColor,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  reservedSize: 18,
+                  interval: 1,
+                  getTitlesWidget: bottomTitleWidgets,
+                ),
+              ),
               leftTitles: AxisTitles(
                 axisNameSize: 20,
                 axisNameWidget: Text(
@@ -158,10 +169,10 @@ class PlantGraph extends StatelessWidget {
                   ),
                 ),
                 sideTitles: SideTitles(
-                  showTitles: false,
-                  // interval: 1,
-                  // reservedSize: 40,
-                  // getTitlesWidget: leftTitleWidgets,
+                  showTitles: true,
+                  interval: 1,
+                  reservedSize: 40,
+                  getTitlesWidget: leftTitleWidgets,
                 ),
               ),
             ),

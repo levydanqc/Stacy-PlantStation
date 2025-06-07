@@ -1,8 +1,9 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:collection/collection.dart';
+
 import 'package:stacy_frontend/src/models/plant.dart';
 import 'package:stacy_frontend/src/services/logger.dart';
-
 import 'package:stacy_frontend/src/utilities/constants.dart';
 import 'package:stacy_frontend/src/widgets/plant/plant_graph.dart';
 
@@ -59,7 +60,6 @@ class _PlantCardState extends State<PlantCard> {
                           color: Colors.teal.shade800,
                         ),
                       ),
-                      // Show Battery Percent with icon
                       const SizedBox(width: 25),
                       Icon(
                         switch (widget.plant.plantData.last.batteryPercentage) {
@@ -85,6 +85,16 @@ class _PlantCardState extends State<PlantCard> {
                           color: Colors.grey.shade600,
                         ),
                       ),
+                      Expanded(
+                        child: Align(
+                          alignment: Alignment.topRight,
+                          // TODO : fix time check logic
+                          child: switch (widget.plant.plantData.last.timestamp == DateTime.now()) {
+                            true => Icon(Icons.check_circle_rounded),
+                            false => Icon(Icons.warning_rounded)
+                          }
+                        )
+                      )
                     ],
                   ),
                 ),
@@ -263,11 +273,15 @@ class _PlantCardState extends State<PlantCard> {
   List<FlSpot> _getGraphPoints() {
     switch (graphType) {
       case PlantGraphType.temperature:
-        return widget.plant.plantData
-            .map((data) => FlSpot(
-                data.timestamp.millisecondsSinceEpoch.toDouble(),
-                data.temperature))
-            .toList();
+        return widget.plant.plantData.map((data) {
+          log.fine(
+              'Adding temperature point: ${data.timestamp.millisecondsSinceEpoch.toDouble()} - ${data.temperature}');
+
+          return FlSpot(
+            data.timestamp.millisecondsSinceEpoch.toDouble(),
+            data.temperature,
+          );
+        }).toList();
       case PlantGraphType.humidity:
         return widget.plant.plantData
             .map((data) => FlSpot(
