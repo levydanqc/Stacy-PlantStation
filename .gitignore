@@ -1,6 +1,6 @@
-*/*/.DS_Store
+**/.DS_Store
 *.DS_Store
 
 **/.env
-backend/node_modules
-backend/*.db
+**/node_modules
+**/*.db
