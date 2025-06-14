@@ -33,10 +33,9 @@
 #define DELAY_SHORT 25
 
 // BME280 sensor Units
-BME280::TempUnit TEMP_UNIT = BME280::TempUnit_Celsius;
-BME280::PresUnit PRES_UNIT = BME280::PresUnit_Pa;
-EnvironmentCalculations::TempUnit ENV_TEMP_UNIT =
-    EnvironmentCalculations::TempUnit_Celsius;
+#define TEMP_UNIT BME280::TempUnit_Celsius
+#define PRES_UNIT BME280::PresUnit_Pa
+#define ENV_TEMP_UNIT EnvironmentCalculations::TempUnit_Celsius
 
 typedef struct SensorData {
   float temperature = 0.0;
@@ -48,6 +47,5 @@ typedef struct SensorData {
   float batteryVoltage = 0.0;
   float batteryPercentage = 0.0;
 } SensorData;
-SensorData sensorData;
 
 #endif
