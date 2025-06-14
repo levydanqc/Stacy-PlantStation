@@ -98,17 +98,23 @@ void NetworkHandler::sendDataToServer(SensorData sensorData) {
  * @return The MAC address as a String.
  */
 String NetworkHandler::getMacAddress() {
+  DEBUG("Reading MAC address... ");
   uint8_t baseMac[6];
   esp_err_t ret = esp_wifi_get_mac(WIFI_IF_STA, baseMac);
+
   if (ret == ESP_OK) {
-    String macAddress =
-        String(baseMac[0], HEX) + ":" + String(baseMac[1], HEX) + ":" +
-        String(baseMac[2], HEX) + ":" + String(baseMac[3], HEX) + ":" +
-        String(baseMac[4], HEX) + ":" + String(baseMac[5], HEX);
+    char macStr[18];
+    snprintf(macStr, sizeof(macStr), "%02X:%02X:%02X:%02X:%02X:%02X",
+         baseMac[0], baseMac[1], baseMac[2], baseMac[3], baseMac[4], baseMac[5]);
+    String macAddress = String(macStr);
     macAddress.toUpperCase();
     DEBUGLN("MAC Address: " + macAddress);
+
     return macAddress;
   } else {
     DEBUGLN("Failed to read MAC address");
+    DEBUGLN("Error code: " + String(ret));
+
+    return "00:00:00:00:00:00";
   }
 }
