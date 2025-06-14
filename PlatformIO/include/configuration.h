@@ -11,7 +11,7 @@
 
 // BME280
 #define SEALEVELPRESSURE_HPA (1013.25)
-#define BME280_ADDR BME280I2C::I2CAddr_0x76
+#define BME280_ADDR 0x76
 
 // Capacitance
 #define CAPACITANCE_PIN 2
@@ -41,9 +41,11 @@ EnvironmentCalculations::TempUnit ENV_TEMP_UNIT =
 typedef struct SensorData {
   float temperature = 0.0;
   float humidity = 0.0;
+  float moisture = 0.0;
   float pressure = 0.0;
   float hic = 0.0;
   float dewPoint = 0.0;
+  float batteryVoltage = 0.0;
   float batteryPercentage = 0.0;
 } SensorData;
 SensorData sensorData;

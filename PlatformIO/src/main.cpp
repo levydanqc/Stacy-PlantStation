@@ -3,26 +3,22 @@
 #include "configuration.h"
 #include "credentials.h"
 #include "debug.h"
-#include <BME280I2C.h>
+#include <Adafruit_BME280.h>
+#include <Adafruit_Sensor.h>
 #include <EnvironmentCalculations.h>
 #include <HTTPClient.h>
 #include <SPI.h>
 #include <WiFi.h>
 #include <Wire.h>
 
-BME280I2C::Settings settings(BME280::OSR_X1, BME280::OSR_X1, BME280::OSR_X1,
-                             BME280::Mode_Forced, BME280::StandbyTime_500us,
-                             BME280::Filter_2, BME280::SpiEnable_False,
-                             BME280_ADDR);
-
-BME280I2C bme280(settings);
+Adafruit_BME280 bme280;
 
 // --- Function Prototypes ---
 void connectToWiFi();
 void sendDataToServer(SensorData sensorData);
 SensorData readSensors();
 void powerOff();
-float readCapacitance();
+float readMoisture();
 float readBatteryVoltage();
 int calculateBatteryPercentage(float voltage);
 
@@ -31,10 +27,7 @@ void setup() {
   Serial.begin(115200);
   DEBUGLN("\nESP32 Woke Up!");
 
-  pinMode(TPL5110_DONE_PIN, OUTPUT);
-
-  // Start I2C communication
-  Wire.begin(I2C_SDA_PIN, I2C_SCL_PIN);
+  // pinMode(TPL5110_DONE_PIN, OUTPUT);
 
   // Attempt to connect to Wi-Fi
   connectToWiFi();
@@ -46,12 +39,13 @@ void setup() {
   }
 
   SensorData data = readSensors();
-  data.batteryPercentage = calculateBatteryPercentage(readBatteryVoltage());
+  data.batteryVoltage = readBatteryVoltage();
+  data.batteryPercentage = calculateBatteryPercentage(data.batteryVoltage);
 
   sendDataToServer(data);
 
   // Signal the TPL5110 to turn off power
-  powerOff();
+  // powerOff();
 }
 
 // --- Loop Function (empty, as logic is in setup after wake) ---
@@ -85,13 +79,21 @@ void connectToWiFi() {
 }
 
 SensorData readSensors() {
-  delay(DELAY_SHORT);
+  unsigned status = bme280.begin(BME280_ADDR);
+
+  if (!status) {
+    DEBUG("BME280 sensor initialization failed with status: ");
+    DEBUGLN(status);
+    // powerOff();
+  }
 
   DEBUGLN("Reading BME280 sensor...");
 
   SensorData sensorData;
-  bme280.read(sensorData.temperature, sensorData.pressure, sensorData.humidity,
-              TEMP_UNIT, PRES_UNIT);
+  sensorData.temperature = bme280.readTemperature();
+  sensorData.humidity = bme280.readHumidity();
+  sensorData.pressure = bme280.readPressure() / 100.0;
+  sensorData.moisture = readMoisture();
 
   sensorData.dewPoint = EnvironmentCalculations::DewPoint(
       sensorData.temperature, sensorData.humidity, ENV_TEMP_UNIT);
@@ -119,15 +121,19 @@ void sendDataToServer(SensorData sensorData) {
     if (http.begin(client, SERVER_URL)) {
       // Set headers
       http.addHeader("Content-Type", "application/json");
-      http.addHeader("Authorization", "API_KEY");
+      http.addHeader("Authorization", "Bearer " + String(BEARER_TOKEN));
+      http.addHeader("Device-ID", "F1:F1:F1:F1:F1:F1");
+      http.addHeader("UID", "d2ae76dd32239411");
 
       String jsonPayload =
           "{\"temperature\":" + String(sensorData.temperature) +
           ",\"humidity\":" + String(sensorData.humidity) +
+          ",\"moisture\":" + String(sensorData.moisture) +
+          ",\"pressure\":" + String(sensorData.pressure) +
           ",\"hic\":" + String(sensorData.hic) +
           ",\"dewPoint\":" + String(sensorData.dewPoint) +
           ",\"batteryPercentage\":" + String(sensorData.batteryPercentage) +
-          ",\"pressure\":" + String(sensorData.pressure) + "}";
+          ",\"batteryVoltage\":" + String(sensorData.batteryVoltage) + "}";
 
       DEBUG("Sending JSON payload: ");
       DEBUGLN(jsonPayload);
@@ -193,14 +199,14 @@ int calculateBatteryPercentage(float voltage) {
 }
 
 /**
- * @brief Reads the capacitance value from the sensor.
- * @return The capacitance value.
+ * @brief Reads the moisture from the sensor.
+ * @return The moisture value.
  */
-float readCapacitance() {
+float readMoisture() {
   uint16_t sensorValue = analogRead(CAPACITANCE_PIN);
 
   float voltage = sensorValue * (3.3 / 4095.0);
   // TODO : calibrate this value
-  float capacitance = (voltage * 10.0) + 5.0;
-  return capacitance;
+  float moisture = (voltage * 10.0) + 5.0;
+  return moisture;
 }
