@@ -1,13 +1,11 @@
-// import other routes
 const weatherRoutes = require('./weather.js');
+const usersRoutes = require('./users.js');
+const plantsRoutes = require('./plants.js')
 
-const appRouter = (app, fs) => {
-  app.get('/', (req, res) => {
-    res.send('welcome to the development api-server');
-  });
-
-  // other routes
-  weatherRoutes(app, fs);
+const appRouter = (app, clients) => {
+  weatherRoutes(app, clients);
+  usersRoutes(app);
+  plantsRoutes(app);
 };
 
 module.exports = appRouter;

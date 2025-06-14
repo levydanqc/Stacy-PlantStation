@@ -4,6 +4,7 @@
 
 #include <HTTPClient.h>
 #include <WiFi.h>
+#include <esp_wifi.h>
 
 /**
  * @brief Connects the ESP32 to the configured Wi-Fi network.
@@ -54,7 +55,7 @@ void NetworkHandler::sendDataToServer(SensorData sensorData) {
       // Set headers
       http.addHeader("Content-Type", "application/json");
       http.addHeader("Authorization", "Bearer " + String(BEARER_TOKEN));
-      http.addHeader("Device-ID", "F1:F1:F1:F1:F1:F1");
+      http.addHeader("Device-ID", getMacAddress());
       http.addHeader("UID", "d2ae76dd32239411");
 
       String jsonPayload =
@@ -88,5 +89,26 @@ void NetworkHandler::sendDataToServer(SensorData sensorData) {
     }
   } else {
     DEBUGLN("WiFi not connected. Cannot send data.");
+  }
+}
+
+/**
+ * @brief Reads the MAC address of the ESP32 and prints it to the Serial
+ * Monitor.
+ * @return The MAC address as a String.
+ */
+String NetworkHandler::getMacAddress() {
+  uint8_t baseMac[6];
+  esp_err_t ret = esp_wifi_get_mac(WIFI_IF_STA, baseMac);
+  if (ret == ESP_OK) {
+    String macAddress =
+        String(baseMac[0], HEX) + ":" + String(baseMac[1], HEX) + ":" +
+        String(baseMac[2], HEX) + ":" + String(baseMac[3], HEX) + ":" +
+        String(baseMac[4], HEX) + ":" + String(baseMac[5], HEX);
+    macAddress.toUpperCase();
+    DEBUGLN("MAC Address: " + macAddress);
+    return macAddress;
+  } else {
+    DEBUGLN("Failed to read MAC address");
   }
 }

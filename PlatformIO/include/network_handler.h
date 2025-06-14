@@ -5,10 +5,12 @@
 #include <Arduino.h>
 
 class NetworkHandler {
+private:
+  static String getMacAddress();
+
 public:
   static void connectToWiFi();
   static void sendDataToServer(SensorData sensorData);
-  static String getMacAddress(); // Moved from main.cpp
 };
 
 #endif

@@ -1,74 +1,65 @@
-const weatherRoutes = (app, fs) => {
-  const dataPath = './data/weather.json';
+const SensorData = require('../models/sensorData');
+const database = require('../utilities/database');
+const broadcast = require('../utilities/broadcast');
+const authenticateToken = require('../middleware/authenticateToken.js');
 
-  const readFile = (
-    callback,
-    returnJson = false,
-    filePath = dataPath,
-    encoding = 'utf8'
-  ) => {
-    fs.readFile(filePath, encoding, (err, data) => {
-      if (err) {
-        throw err;
-      }
+const weatherRoutes = (app, clients) => {
+  app.use('/weather', authenticateToken);
 
-      callback(returnJson ? JSON.parse(data) : data);
-    });
-  };
-
-  const writeFile = (
-    fileData,
-    callback,
-    filePath = dataPath,
-    encoding = 'utf8'
-  ) => {
-    fs.writeFile(filePath, fileData, encoding, (err) => {
-      if (err) {
-        throw err;
-      }
-
-      callback();
-    });
-  };
-
-  // CREATE
   app.post('/weather', (req, res) => {
-    // check if the request header has Authorization
-    if (!req.headers.authorization || req.headers.authorization !== 'API_KEY') {
-      console.log('Unauthorized');
-      return res.status(401).send('Unauthorized');
+    const rawDataFromDevice = req.body;
+    const device_id = req.headers['device-id'];
+    const user_id = req.headers['user-id'];
+
+    console.log('Received data from device: ', device_id);
+    console.log('Received data from user: ', user_id);
+
+    if (!device_id || device_id.length === 0) {
+      console.warn('Unauthorized: No Device-ID provided');
+      return res
+        .status(401)
+        .send({ message: 'Unauthorized: No Device-ID provided.' });
     }
-    readFile((data) => {
-      console.log('req.body', req.body);
-      const newUserId = Date.now().toString();
+    if (!user_id || user_id.length === 0) {
+      console.warn('Unauthorized: No User-ID provided');
+      return res
+        .status(401)
+        .send({ message: 'Unauthorized: No User-ID provided.' });
+    }
 
-      // add the new user
-      // data[newUserId.toString()] = req.body;
+    try {
+      const sensorDataObject = SensorData.fromObject(rawDataFromDevice);
+      // Make sure removing this does not break anything
+      // const cleanedSensorData = sensorDataObject.toObject();
 
-      // console.log('data', data);
-
-      //   writeFile(JSON.stringify(data, null, 2), () => {
-      //     res.status(200).send('new user added');
-      //   });
-    }, true);
-
-    return res.status(200).send('good');
-  });
-
-  // READ
-  app.get('/weather', (req, res) => {
-    readFile((data) => {
-      res.status(200).send(data);
-    }, true);
-
-    // send an update to a websocket client
-
-    // use function
-    createWebSocketClient(data);
+      database
+        .storeSensorData(sensorDataObject, device_id, user_id)
+        .then(() => {
+          broadcast(
+            clients,
+            JSON.stringify({ type: 'update', ...sensorDataObject }),
+            user_id
+          );
+          return res
+            .status(200)
+            .send({ message: 'Data stored and broadcast successfully' });
+        })
+        .catch((error) => {
+          console.error(
+            `Error saving data to database for device_id "${device_id}":`,
+            error
+          );
+          return res.status(500).send({
+            message: 'Error saving data to database. Check server logs.',
+          });
+        });
+    } catch (error) {
+      console.error('Error processing incoming sensor data:', error.message);
+      return res
+        .status(400)
+        .send({ message: `Invalid sensor data: ${error.message}` });
+    }
   });
 };
-
-// Write a curl command to test the above API
-// curl -X GET http://localhost:3001/weather
 
 module.exports = weatherRoutes;
