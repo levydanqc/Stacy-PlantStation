@@ -1,8 +1,9 @@
 #ifndef CREDENTIALS_H
 #define CREDENTIALS_H
 // Add your WiFi credentials
-#define WIFI_SSID "Wifi SSID"         // Replace with your WiFi SSID
-#define WIFI_PASSWORD "Wifi Password" // Replace with your WiFi credentials
-#define SERVER_URL "https://example.com/upload" // Replace with your server URL
-#define AUTH_TOKEN "YourBearerTokenHere" // Replace with your Bearer token for authentication
+#define SERVER_URL "https://example.com" // Replace with your server URL
+#define BEARER_TOKEN                                                           \
+  "YourBearerTokenHere" // Replace with your Bearer token for authentication
+#define SALT                                                                   \
+  "YourSaltValueHere" // Replace with your salt value for password hashing
 #endif
