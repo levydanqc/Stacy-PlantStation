@@ -2,19 +2,27 @@
 #include "credentials.h"
 #include "debug.h"
 
+#include <ArduinoJson.h>
 #include <HTTPClient.h>
+#include <Preferences.h>
 #include <WiFi.h>
 #include <esp_wifi.h>
+
+Preferences networkPreferences;
 
 /**
  * @brief Connects the ESP32 to the configured Wi-Fi network.
  * Has a timeout to avoid getting stuck.
  */
 void NetworkHandler::connectToWiFi() {
-  DEBUG("Connecting to WiFi: ");
-  DEBUGLN(WIFI_SSID);
+  networkPreferences.begin("wifi-creds", true);
+  String ssid = networkPreferences.getString("ssid");
+  String password = networkPreferences.getString("wifi_password");
+  networkPreferences.end();
 
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  DEBUG("Connecting to WiFi: ");
+  DEBUGLN(ssid);
+  WiFi.begin(ssid, password);
 
   unsigned long startTime = millis();
   while (WiFi.status() != WL_CONNECTED) {
@@ -51,12 +59,17 @@ void NetworkHandler::sendDataToServer(SensorData sensorData) {
     DEBUGLN(SERVER_URL);
 
     // Begin HTTP connection
-    if (http.begin(client, SERVER_URL)) {
+    if (http.begin(client, String(SERVER_URL) + "/weather")) {
       // Set headers
       http.addHeader("Content-Type", "application/json");
       http.addHeader("Authorization", "Bearer " + String(BEARER_TOKEN));
       http.addHeader("Device-ID", getMacAddress());
-      http.addHeader("UID", "d2ae76dd32239411");
+
+      networkPreferences.begin("wifi-creds", true);
+      String uid = networkPreferences.getString("uid", "");
+      networkPreferences.end();
+
+      http.addHeader("UID", uid);
 
       String jsonPayload =
           "{\"temperature\":" + String(sensorData.temperature) +
@@ -93,6 +106,119 @@ void NetworkHandler::sendDataToServer(SensorData sensorData) {
 }
 
 /**
+ * @brief Logs in the user with the provided email and password.
+ * @param email The user's email.
+ * @param password The user's password.
+ * @return The user ID if login is successful, empty string otherwise.
+ */
+String NetworkHandler::loginUser(const String &email, const String &password) {
+  NetworkHandler::connectToWiFi();
+
+  if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
+    WiFiClient client;
+
+    DEBUG("Logging in user: ");
+    DEBUGLN(email);
+
+    // Begin HTTP connection
+    if (http.begin(client, String(SERVER_URL) + "/sessions")) {
+
+      String hashedPassword = NetworkHandler::hashPassword(password);
+
+      http.addHeader("Content-Type", "application/json");
+      http.addHeader("Authorization", "Bearer " + String(BEARER_TOKEN));
+
+      String jsonPayload = "{\"email\":\"" + email + "\",\"password\":\"" +
+                           hashedPassword + "\"}";
+
+      DEBUG("Sending JSON payload: ");
+      DEBUGLN(jsonPayload);
+
+      // Send POST request
+      int httpResponseCode = http.POST(jsonPayload);
+
+      // Check response
+      if (httpResponseCode > 0) {
+        String response = http.getString();
+        DEBUGLN(String("HTTP POST response code: ") + String(httpResponseCode));
+        DEBUGLN("Response: " + response);
+        http.end();
+
+        // Parse the user ID from the response (assuming it's in JSON format)
+        JsonDocument doc;
+        DeserializationError error = deserializeJson(doc, response);
+        if (!error) {
+          DEBUGLN("Parsed JSON successfully.");
+          DEBUG("User ID: ");
+          DEBUGLN(doc["uid"].as<String>());
+
+          return doc["uid"].as<String>();
+        } else {
+          DEBUGLN("Failed to parse JSON response: " + String(error.c_str()));
+          return "";
+        }
+      } else {
+        DEBUGLN(String("HTTP POST failed, error: ") +
+                http.errorToString(httpResponseCode));
+        http.end();
+        return "";
+      }
+    } else {
+      DEBUGLN("HTTP connection failed. Unable to begin.");
+      return "";
+    }
+  } else {
+    DEBUGLN("WiFi not connected. Cannot log in.");
+    return "";
+  }
+}
+
+void NetworkHandler::createPlant(String plantName) {
+  NetworkHandler::connectToWiFi();
+
+  if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
+    WiFiClient client;
+
+    DEBUG("Creating plant on server: ");
+    DEBUGLN(SERVER_URL);
+
+    if (http.begin(client, String(SERVER_URL) + "/plants")) {
+      networkPreferences.begin("wifi-creds", true);
+      String uid = networkPreferences.getString("uid", "");
+      networkPreferences.end();
+
+      http.addHeader("Content-Type", "application/json");
+      http.addHeader("Authorization", "Bearer " + String(BEARER_TOKEN));
+      http.addHeader("Device-ID", getMacAddress());
+      http.addHeader("UID", uid);
+
+      String jsonPayload = "{\"plant_name\":\"" + plantName + "\"}";
+
+      DEBUG("Sending JSON payload: ");
+      DEBUGLN(jsonPayload);
+
+      // Send POST request
+      int httpResponseCode = http.POST(jsonPayload);
+
+      if (httpResponseCode > 0) {
+        DEBUGLN(String("HTTP POST response code: ") + String(httpResponseCode));
+      } else {
+        DEBUGLN(String("HTTP POST failed, error: ") +
+                http.errorToString(httpResponseCode));
+      }
+
+      http.end();
+    } else {
+      DEBUGLN("HTTP connection failed. Unable to begin.");
+    }
+  } else {
+    DEBUGLN("WiFi not connected. Cannot create plant.");
+  }
+}
+
+/**
  * @brief Reads the MAC address of the ESP32 and prints it to the Serial
  * Monitor.
  * @return The MAC address as a String.
@@ -105,7 +231,8 @@ String NetworkHandler::getMacAddress() {
   if (ret == ESP_OK) {
     char macStr[18];
     snprintf(macStr, sizeof(macStr), "%02X:%02X:%02X:%02X:%02X:%02X",
-         baseMac[0], baseMac[1], baseMac[2], baseMac[3], baseMac[4], baseMac[5]);
+             baseMac[0], baseMac[1], baseMac[2], baseMac[3], baseMac[4],
+             baseMac[5]);
     String macAddress = String(macStr);
     macAddress.toUpperCase();
     DEBUGLN("MAC Address: " + macAddress);
@@ -117,4 +244,34 @@ String NetworkHandler::getMacAddress() {
 
     return "00:00:00:00:00:00";
   }
+}
+
+String NetworkHandler::hashPassword(const String &password) {
+  String toHash = password + SALT;
+
+  byte hashResult[32];
+
+  const mbedtls_md_info_t *md_info =
+      mbedtls_md_info_from_type(MBEDTLS_MD_SHA256);
+  if (md_info == NULL) {
+    Serial.println("Failed to get mbedtls md_info for SHA256");
+    return "";
+  }
+  int return_code = mbedtls_md(md_info, (const unsigned char *)toHash.c_str(),
+                               toHash.length(), hashResult);
+
+  if (return_code != 0) {
+    Serial.printf("mbedtls_md() returned -0x%04X\n",
+                  (unsigned int)-return_code);
+    return "";
+  }
+
+  String hashString = "";
+  for (int i = 0; i < 32; i++) {
+    char hex[3];
+    sprintf(hex, "%02x", hashResult[i]);
+    hashString += hex;
+  }
+
+  return hashString;
 }
