@@ -113,6 +113,7 @@ void NetworkHandler::sendDataToServer(SensorData sensorData) {
  */
 String NetworkHandler::loginUser(const String &email, const String &password) {
   NetworkHandler::connectToWiFi();
+  delay(DELAY_STANDARD);
 
   if (WiFi.status() == WL_CONNECTED) {
     HTTPClient http;
@@ -176,6 +177,7 @@ String NetworkHandler::loginUser(const String &email, const String &password) {
 
 void NetworkHandler::createPlant(String plantName) {
   NetworkHandler::connectToWiFi();
+  delay(DELAY_STANDARD);
 
   if (WiFi.status() == WL_CONNECTED) {
     HTTPClient http;

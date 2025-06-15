@@ -276,8 +276,8 @@ private:
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data),
         })
-        .then(response => response.json())
         .then(result => {
+          if (!result.ok) throw new Error('Connection failed');
           loadingSpinner.classList.add('hidden');
           statusMessage.textContent = result.message || (result.success ? 'Success!' : 'Failed.');
           statusMessage.className = `status-message ${result.success ? 'status-success' : 'status-error'}`;

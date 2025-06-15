@@ -32,6 +32,7 @@ void setup() {
   String storedUID = preferences.getString("uid");
   String storedEmail = preferences.getString("email");
   String storedPwd = preferences.getString("user_password");
+  String storedPlantName = preferences.getString("plant_name");
 
   // if no UID is stored but email and password are present,
   if (storedUID.length() < 1 && storedEmail.length() > 1 &&
@@ -42,6 +43,7 @@ void setup() {
     if (!storedUID.isEmpty()) {
       DEBUGLN("UID created successfully: " + storedUID);
       preferences.putString("uid", storedUID);
+      NetworkHandler::createPlant(String(storedPlantName));
     } else {
       DEBUGLN("Failed to create UID. Please check your credentials.");
     }

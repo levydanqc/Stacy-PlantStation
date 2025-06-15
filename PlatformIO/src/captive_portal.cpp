@@ -84,19 +84,22 @@ void CaptivePortal::handleConnect() {
     initialModePreferences.putString("wifi_password", wifi_password);
     initialModePreferences.putString("email", email);
     initialModePreferences.putString("user_password", user_password);
+    initialModePreferences.putString("plant_name", plant_name);
+    initialModePreferences.end();
 
     String uid = NetworkHandler::loginUser(email, user_password);
 
-    if (!uid.isEmpty())
+    if (!uid.isEmpty()) {
+      initialModePreferences.begin("wifi-creds", false);
       initialModePreferences.putString("uid", uid);
-
-    NetworkHandler::createPlant(String(plant_name));
+      initialModePreferences.end();
+      NetworkHandler::createPlant(String(plant_name));
+    }
 
     server.send(200, "text/plain",
                 "Attempting to connect to WiFi. The device will restart soon.");
 
-    delay(2000);
-    initialModePreferences.end();
+    delay(DELAY_STANDARD);
 
     ESP.restart();
   } else {
