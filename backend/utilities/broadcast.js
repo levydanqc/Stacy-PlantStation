@@ -1,4 +1,6 @@
 const broadcast = function (clients, data, user_uid) {
+  const WebSocket = require('ws');
+
   console.log(`Broadcasting data to ${clients.size} clients: ${data}`);
   if (clients.size === 0) {
     console.log('No clients connected to broadcast data to.');

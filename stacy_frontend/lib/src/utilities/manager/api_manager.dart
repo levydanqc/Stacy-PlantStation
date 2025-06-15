@@ -59,7 +59,7 @@ class ApiManager {
       return json.decode(response.body);
     } else {
       throw Exception(
-          'Failed to login user, status code: ${response.statusCode}');
+          'Failed to login user, status code: ${response.statusCode} and body: ${response.body}');
     }
   }
 
