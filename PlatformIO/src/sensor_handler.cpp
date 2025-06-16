@@ -1,19 +1,23 @@
 #include "sensor_handler.h"
 #include "debug.h"
-#include <Adafruit_BME280.h>
 #include <Adafruit_Sensor.h>
 #include <EnvironmentCalculations.h>
 #include <Wire.h>
 
-Adafruit_BME280 SensorHandler::bme280;
+// Adafruit_BME280 SensorHandler::bme280;
+Adafruit_HDC302x SensorHandler::hdc3022;
 
 /**
- * @brief Initializes the BME280 sensor.
+ * @brief Initializes the HDC3022 sensor.
  * @return True if the sensor is initialized successfully, false otherwise.
  */
-bool SensorHandler::initBME() {
-  if (!SensorHandler::bme280.begin(BME280_ADDR)) {
-    DEBUG("BME280 sensor initialization failed");
+bool SensorHandler::initHDC() {
+  // if (!SensorHandler::bme280.begin(BME280_ADDR)) {
+  //   DEBUG("BME280 sensor initialization failed");
+  //   return false;
+  // }
+  if (!SensorHandler::hdc3022.begin(HDC3022_ADDR)) {
+    DEBUG("HDC3022 sensor initialization failed");
     return false;
   }
   delay(DELAY_STANDARD);
@@ -21,15 +25,17 @@ bool SensorHandler::initBME() {
 }
 
 /**
- * @brief Reads the BME280 sensor data and populates the SensorData struct.
+ * @brief Reads the HDC3022 sensor data and populates the SensorData struct.
  * @param sensorData Reference to the SensorData struct to populate.
  */
-void SensorHandler::readBME(SensorData &sensorData) {
-  DEBUGLN("Reading BME280 sensor...");
+void SensorHandler::readHDC(SensorData &sensorData) {
+  DEBUGLN("Reading HDC3022 sensor...");
 
-  sensorData.temperature = SensorHandler::bme280.readTemperature();
-  sensorData.humidity = SensorHandler::bme280.readHumidity();
-  sensorData.pressure = SensorHandler::bme280.readPressure() / 100.0;
+  if (!SensorHandler::hdc3022.readTemperatureHumidityOnDemand(
+          sensorData.temperature, sensorData.humidity, TRIGGERMODE_LP0)) {
+    DEBUGLN("Failed to read temperature and humidity from HDC3022 sensor.");
+    return;
+  }
 }
 
 /**
@@ -50,7 +56,7 @@ float SensorHandler::getMoisture() {
  * @param sensorData Reference to the SensorData struct to populate.
  */
 void SensorHandler::readSensorData(SensorData &sensorData) {
-  readBME(sensorData);
+  readHDC(sensorData);
   sensorData.moisture = getMoisture();
   sensorData.dewPoint = EnvironmentCalculations::DewPoint(
       sensorData.temperature, sensorData.humidity, ENV_TEMP_UNIT);
