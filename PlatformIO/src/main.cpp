@@ -1,4 +1,4 @@
-#define DEBUG_MODE 1
+// #define DEBUG_MODE 1
 
 #include "configuration.h"
 #include "credentials.h"
@@ -18,9 +18,13 @@ void powerOff();
 void startNormalMode();
 
 void setup() {
-  Serial.begin(115200);
+  SERIAL_BEGIN(115200);
+
+#ifdef DEBUG_MODE
   while (!Serial)
     ;
+#endif
+
   Serial.setDebugOutput(true);
   delay(DELAY_SHORT);
 
