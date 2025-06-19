@@ -1,3 +1,5 @@
+#define DEBUG_MODE 1
+
 #include "configuration.h"
 #include "credentials.h"
 #include "debug.h"
