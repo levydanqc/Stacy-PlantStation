@@ -82,7 +82,7 @@ void startNormalMode() {
   NetworkHandler::connectToWiFi();
 
   SensorData data;
-  SensorHandler::initBME();
+  SensorHandler::initHDC();
   SensorHandler::readSensorData(data);
 
   BatteryMonitor::getBatteryStatus(data);
