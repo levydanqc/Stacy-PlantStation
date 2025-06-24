@@ -2,8 +2,8 @@ const getTablesSQL = `
 SELECT name FROM sqlite_master WHERE type='table' LIMIT 1;
 `;
 
-const addSensorDataSQL = `
-INSERT INTO sensor_data (plant_id, temperature, humidity, moisture, hic, batteryVoltage, batteryPercentage) 
+const addPlantDataSQL = `
+INSERT INTO plant_data (plant_id, temperature, humidity, moisture, hic, batteryVoltage, batteryPercentage) 
 VALUES (?, ?, ?, ?, ?, ?, ?);
 `;
 
