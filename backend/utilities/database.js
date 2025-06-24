@@ -143,7 +143,6 @@ function storePlantData(weatherData, device_id, uid) {
                         row.temperature,
                         row.humidity,
                         row.moisture,
-                        row.pressure,
                         row.hic,
                         row.batteryVoltage,
                         row.batteryPercentage
@@ -407,7 +406,6 @@ function getPlantsDataByUserUID(uid) {
                     temperature: dataRow.temperature,
                     humidity: dataRow.humidity,
                     moisture: dataRow.moisture,
-                    pressure: dataRow.pressure,
                     hic: dataRow.hic,
                     batteryVoltage: dataRow.batteryVoltage,
                     batteryPercentage: dataRow.batteryPercentage,

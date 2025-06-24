@@ -174,7 +174,7 @@ class _PlantCardState extends State<PlantCard> {
                     Icons.speed,
                     'Pressure',
                     Text(
-                      '${widget.plant.plantData.last.pressure} hPa',
+                      '${widget.plant.plantData.last.humidity} hPa',
                       style: TextStyle(
                           color: Colors.grey.shade800,
                           fontWeight: FontWeight.bold,
