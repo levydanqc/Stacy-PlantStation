@@ -8,6 +8,8 @@
 
 Preferences preferences;
 
+// TODO : NEED TO REMOVE PRESSURE FROM BACKEND
+
 #include <battery_monitor.h>
 #include <captive_portal.h>
 #include <network_handler.h>
