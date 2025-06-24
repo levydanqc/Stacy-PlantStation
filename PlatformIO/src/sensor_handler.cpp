@@ -4,7 +4,6 @@
 #include <EnvironmentCalculations.h>
 #include <Wire.h>
 
-// Adafruit_BME280 SensorHandler::bme280;
 Adafruit_HDC302x SensorHandler::hdc3022;
 
 /**
@@ -12,10 +11,6 @@ Adafruit_HDC302x SensorHandler::hdc3022;
  * @return True if the sensor is initialized successfully, false otherwise.
  */
 bool SensorHandler::initHDC() {
-  // if (!SensorHandler::bme280.begin(BME280_ADDR)) {
-  //   DEBUG("BME280 sensor initialization failed");
-  //   return false;
-  // }
   if (!SensorHandler::hdc3022.begin(HDC3022_ADDR)) {
     DEBUG("HDC3022 sensor initialization failed");
     return false;

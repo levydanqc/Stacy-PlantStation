@@ -1,7 +1,6 @@
 #ifndef CONFIGURATION_H
 #define CONFIGURATION_H
 
-#include <BME280I2C.h>
 #include <EnvironmentCalculations.h>
 
 // Battery
@@ -35,9 +34,7 @@
 #define AP_SSID "Stacy PlantStation"
 #define DNS_PORT 53
 
-// BME280 sensor Units
-#define TEMP_UNIT BME280::TempUnit_Celsius
-#define PRES_UNIT BME280::PresUnit_Pa
+// EnvironmentCalculations settings
 #define ENV_TEMP_UNIT EnvironmentCalculations::TempUnit_Celsius
 
 typedef struct SensorData {
