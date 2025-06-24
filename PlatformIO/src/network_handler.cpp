@@ -75,7 +75,6 @@ void NetworkHandler::sendDataToServer(SensorData sensorData) {
           "{\"temperature\":" + String(sensorData.temperature) +
           ",\"humidity\":" + String(sensorData.humidity) +
           ",\"moisture\":" + String(sensorData.moisture) +
-          ",\"pressure\":" + String(sensorData.pressure) +
           ",\"hic\":" + String(sensorData.hic) +
           ",\"dewPoint\":" + String(sensorData.dewPoint) +
           ",\"batteryPercentage\":" + String(sensorData.batteryPercentage) +

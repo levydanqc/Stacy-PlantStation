@@ -2,9 +2,9 @@ const getTablesSQL = `
 SELECT name FROM sqlite_master WHERE type='table' LIMIT 1;
 `;
 
-const addPlantDataSQL = `
-INSERT INTO plant_data (plant_id, temperature, humidity, moisture, pressure, hic, batteryVoltage, batteryPercentage) 
-VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+const addSensorDataSQL = `
+INSERT INTO sensor_data (plant_id, temperature, humidity, moisture, hic, batteryVoltage, batteryPercentage) 
+VALUES (?, ?, ?, ?, ?, ?, ?);
 `;
 
 const addUserSQL = `
@@ -69,5 +69,5 @@ module.exports = {
   getPlantsByUserIdSQL,
   getPlantByDeviceIdSQL,
   getPlantByIdSQL,
-  getDataByRowIdSQL
+  getDataByRowIdSQL,
 };

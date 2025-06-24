@@ -26,7 +26,6 @@ CREATE TABLE IF NOT EXISTS plant_data (
     temperature REAL,
     humidity REAL,
     moisture REAL,
-    pressure REAL,
     hic REAL,
     batteryVoltage REAL,
     batteryPercentage REAL,

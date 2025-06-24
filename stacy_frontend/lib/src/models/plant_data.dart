@@ -4,7 +4,6 @@ class PlantData {
   final double temperature;
   final double humidity;
   final double moisture;
-  final double pressure;
   final double hic;
   final double batteryVoltage;
   final double batteryPercentage;
@@ -14,7 +13,6 @@ class PlantData {
     required this.temperature,
     required this.humidity,
     required this.moisture,
-    required this.pressure,
     required this.hic,
     required this.batteryVoltage,
     required this.batteryPercentage,
@@ -28,7 +26,6 @@ class PlantData {
       'temperature',
       'humidity',
       'moisture',
-      'pressure',
       'hic',
       'batteryVoltage',
       'batteryPercentage',
@@ -47,9 +44,6 @@ class PlantData {
     }
     if (json['moisture'] == null || json['moisture'] is! num) {
       throw ArgumentError('Invalid or missing "moisture" in JSON data');
-    }
-    if (json['pressure'] == null || json['pressure'] is! num) {
-      throw ArgumentError('Invalid or missing "pressure" in JSON data');
     }
     if (json['hic'] == null || json['hic'] is! num) {
       throw ArgumentError('Invalid or missing "hic" in JSON data');
@@ -71,7 +65,6 @@ class PlantData {
       temperature: (json['temperature'] as num).toDouble(),
       humidity: (json['humidity'] as num).toDouble(),
       moisture: (json['moisture'] as num).toDouble(),
-      pressure: (json['pressure'] as num).toDouble(),
       hic: (json['hic'] as num).toDouble(),
       batteryVoltage: (json['batteryVoltage'] as num).toDouble(),
       batteryPercentage: (json['batteryPercentage'] as num).toDouble(),
