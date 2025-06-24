@@ -5,7 +5,7 @@ const sql = require('../sql/sql');
 const sqlInitialize = require('../sql/createTable.js');
 
 const User = require('../models/User');
-const SensorData = require('../models/sensorData.js');
+const SensorData = require('../models/SensorData.js');
 
 const dbPath = path.resolve(__dirname, '../plant_station.db');
 
@@ -79,7 +79,6 @@ function storeSensorData(weatherData, device_id, user_id) {
       temperature,
       humidity,
       moisture,
-      pressure,
       hic,
       batteryVoltage,
       batteryPercentage,
@@ -115,7 +114,6 @@ function storeSensorData(weatherData, device_id, user_id) {
               temperature,
               humidity,
               moisture,
-              pressure,
               hic,
               batteryVoltage,
               batteryPercentage,
@@ -260,7 +258,6 @@ function getDataByPlantId(plant_id) {
           temperature: row.temperature,
           humidity: row.humidity,
           moisture: row.moisture,
-          pressure: row.pressure,
           hic: row.hic,
           batteryVoltage: row.batteryVoltage,
           batteryPercentage: row.batteryPercentage,

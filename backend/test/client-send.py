@@ -58,7 +58,6 @@ def createSensorData():
         "temperature": round(20.0 + (time() % 10), 2),
         "moisture": round(40.0 + (time() % 20), 2),
         "humidity": round(30.0 + (time() % 20), 2),
-        "pressure": round(1000.0 + (time() % 50), 2),
         "hic" : round(20.0 + (time() % 10), 2),
         "batteryVoltage": round(3.5 + (time() % 0.5), 2),
         "batteryPercentage": round(80 + (time() % 20), 2)

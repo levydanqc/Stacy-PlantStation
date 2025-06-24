@@ -9,9 +9,7 @@
 #define BATTERY_MAX 4.2
 #define BATTERY_MIN 3.0
 
-// BME280
-#define SEALEVELPRESSURE_HPA (1013.25)
-// #define BME280_ADDR 0x76
+// HDC3022
 #define HDC3022_ADDR 0x44
 
 // Capacitance
