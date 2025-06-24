@@ -1,7 +1,6 @@
 #ifndef CONFIGURATION_H
 #define CONFIGURATION_H
 
-#include <BME280I2C.h>
 #include <EnvironmentCalculations.h>
 
 // Battery
@@ -9,9 +8,8 @@
 #define BATTERY_MAX 4.2
 #define BATTERY_MIN 3.0
 
-// BME280
-#define SEALEVELPRESSURE_HPA (1013.25)
-#define BME280_ADDR 0x76
+// HDC3022
+#define HDC3022_ADDR 0x44
 
 // Capacitance
 #define CAPACITANCE_PIN 2
@@ -36,15 +34,12 @@
 #define AP_SSID "Stacy PlantStation"
 #define DNS_PORT 53
 
-// BME280 sensor Units
-#define TEMP_UNIT BME280::TempUnit_Celsius
-#define PRES_UNIT BME280::PresUnit_Pa
+// EnvironmentCalculations settings
 #define ENV_TEMP_UNIT EnvironmentCalculations::TempUnit_Celsius
 
 typedef struct SensorData {
-  float temperature = 0.0;
-  float humidity = 0.0;
-  float pressure = 0.0;
+  double temperature = 0.0;
+  double humidity = 0.0;
   float moisture = 0.0;
   float hic = 0.0;
   float dewPoint = 0.0;

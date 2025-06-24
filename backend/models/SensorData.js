@@ -8,7 +8,6 @@ class SensorData {
    * @param {number} temperature - The temperature reading in Celsius.
    * @param {number} humidity - The humidity reading in percentage.
    * @param {number} moisture - The soil moisture reading in percentage.
-   * @param {number} pressure - The atmospheric pressure reading in hPa.
    * @param {number} hic - The heat index in Celsius.
    * @param {number} batteryVoltage - The battery voltage in volts.
    * @param {number} batteryPercentage - The battery percentage.
@@ -17,7 +16,6 @@ class SensorData {
     temperature,
     humidity,
     moisture,
-    pressure,
     hic,
     batteryVoltage,
     batteryPercentage
@@ -30,9 +28,6 @@ class SensorData {
     }
     if (typeof moisture !== 'number' || isNaN(moisture)) {
       throw new Error('Invalid or missing moisture: must be a number.');
-    }
-    if (typeof pressure !== 'number' || isNaN(pressure)) {
-      throw new Error('Invalid or missing pressure: must be a number.');
     }
     if (typeof hic !== 'number' || isNaN(hic)) {
       throw new Error('Invalid or missing hic: must be a number.');
@@ -49,7 +44,6 @@ class SensorData {
     this.temperature = temperature;
     this.humidity = humidity;
     this.moisture = moisture;
-    this.pressure = pressure;
     this.hic = hic;
     this.batteryVoltage = batteryVoltage;
     this.batteryPercentage = batteryPercentage;
@@ -65,7 +59,6 @@ class SensorData {
       temperature: this.temperature,
       humidity: this.humidity,
       moisture: this.moisture,
-      pressure: this.pressure,
       hic: this.hic,
       batteryVoltage: this.batteryVoltage,
       batteryPercentage: this.batteryPercentage,
@@ -79,7 +72,6 @@ class SensorData {
    * @param {number} rawData.temperature
    * @param {number} rawData.humidity
    * @param {number} rawData.moisture
-   * @param {number} rawData.pressure
    * @param {number} rawData.hic
    * @param {number} rawData.batteryVoltage
    * @param {number} rawData.batteryPercentage
@@ -94,7 +86,6 @@ class SensorData {
       rawData.temperature,
       rawData.humidity,
       rawData.moisture,
-      rawData.pressure,
       rawData.hic,
       rawData.batteryVoltage,
       rawData.batteryPercentage

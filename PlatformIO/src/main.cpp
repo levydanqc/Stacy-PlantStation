@@ -19,13 +19,9 @@ void startNormalMode();
 
 void setup() {
   SERIAL_BEGIN(115200);
+  SERIAL_WAIT_FOR_SERIAL;
+  SERIAL_SET_DEBUG_OUTPUT(true);
 
-#ifdef DEBUG_MODE
-  while (!Serial)
-    ;
-#endif
-
-  Serial.setDebugOutput(true);
   delay(DELAY_SHORT);
 
   DEBUGLN("ESP32 Woke Up!");
@@ -40,7 +36,7 @@ void setup() {
   String storedPwd = preferences.getString("user_password");
   String storedPlantName = preferences.getString("plant_name");
 
-  // if no UID is stored but email and password are present,
+  // if no UID is stored but email and password are present
   if (storedUID.length() < 1 && storedEmail.length() > 1 &&
       storedPwd.length() > 1) {
     DEBUGLN("No UID found but email and password are present. Attempting to "
@@ -80,7 +76,7 @@ void startNormalMode() {
   NetworkHandler::connectToWiFi();
 
   SensorData data;
-  SensorHandler::initBME();
+  SensorHandler::initHDC();
   SensorHandler::readSensorData(data);
 
   BatteryMonitor::getBatteryStatus(data);
