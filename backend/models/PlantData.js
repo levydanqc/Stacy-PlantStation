@@ -1,10 +1,10 @@
 /**
  * Represents a weather data reading from a client device.
  */
-class SensorData {
+class PlantData {
   /**
    *
-   * Creates an instance of SensorData.
+   * Creates an instance of PlantData.
    * @param {number} temperature - The temperature reading in Celsius.
    * @param {number} humidity - The humidity reading in percentage.
    * @param {number} moisture - The soil moisture reading in percentage.
@@ -54,7 +54,7 @@ class SensorData {
    * This is useful for sending as JSON or inserting into databases.
    * @returns {object} Plain object with weather data.
    */
-  toObject() {
+  toObject([timestamp]) {
     const obj = {
       temperature: this.temperature,
       humidity: this.humidity,
@@ -63,11 +63,14 @@ class SensorData {
       batteryVoltage: this.batteryVoltage,
       batteryPercentage: this.batteryPercentage,
     };
+    if (timestamp) {
+      obj.timestamp = timestamp;
+    }
     return obj;
   }
 
   /**
-   * Static factory method to create a SensorData instance from a raw object.
+   * Static factory method to create a PlantData instance from a raw object.
    * @param {object} rawData - The raw data object, typically from req.body.
    * @param {number} rawData.temperature
    * @param {number} rawData.humidity
@@ -75,14 +78,14 @@ class SensorData {
    * @param {number} rawData.hic
    * @param {number} rawData.batteryVoltage
    * @param {number} rawData.batteryPercentage
-   * @returns {SensorData}
+   * @returns {PlantData}
    * @throws {Error} if validation fails.
    */
   static fromObject(rawData) {
     if (!rawData) {
       throw new Error('Raw data object is required.');
     }
-    return new SensorData(
+    return new PlantData(
       rawData.temperature,
       rawData.humidity,
       rawData.moisture,
@@ -93,4 +96,4 @@ class SensorData {
   }
 }
 
-module.exports = SensorData;
+module.exports = PlantData;

@@ -1,4 +1,4 @@
-const SensorData = require('../models/sensorData');
+const PlantData = require('../models/PlantData');
 const database = require('../utilities/database');
 const broadcast = require('../utilities/broadcast');
 const authenticateToken = require('../middleware/authenticateToken.js');
@@ -9,10 +9,10 @@ const weatherRoutes = (app, clients) => {
   app.post('/weather', (req, res) => {
     const rawDataFromDevice = req.body;
     const device_id = req.headers['device-id'];
-    const user_id = req.headers['user-id'];
+    const uid = req.headers['uid'];
 
     console.log('Received data from device: ', device_id);
-    console.log('Received data from user: ', user_id);
+    console.log('Received data from user: ', uid);
 
     if (!device_id || device_id.length === 0) {
       console.warn('Unauthorized: No Device-ID provided');
@@ -20,7 +20,7 @@ const weatherRoutes = (app, clients) => {
         .status(401)
         .send({ message: 'Unauthorized: No Device-ID provided.' });
     }
-    if (!user_id || user_id.length === 0) {
+    if (!uid || uid.length === 0) {
       console.warn('Unauthorized: No User-ID provided');
       return res
         .status(401)
@@ -28,20 +28,22 @@ const weatherRoutes = (app, clients) => {
     }
 
     try {
-      const sensorDataObject = SensorData.fromObject(rawDataFromDevice);
-      // Make sure removing this does not break anything
-      // const cleanedSensorData = sensorDataObject.toObject();
+      const plantDataObject = PlantData.fromObject(rawDataFromDevice);
 
       database
-        .storeSensorData(sensorDataObject, device_id, user_id)
-        .then(() => {
+        .storePlantData(plantDataObject, device_id, uid)
+        .then((plant) => {
+          console.log(`Data stored successfully: `, plant);
           broadcast(
             clients,
-            JSON.stringify({ type: 'update', ...sensorDataObject }),
-            user_id
+            JSON.stringify({
+              type: 'update',
+              plants: plant,
+            }),
+            uid
           );
           return res
-            .status(200)
+            .status(201)
             .send({ message: 'Data stored and broadcast successfully' });
         })
         .catch((error) => {
