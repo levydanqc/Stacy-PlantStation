@@ -5,12 +5,16 @@ class User {
   /**
    * Creates an instance of User.
    * @param {string} username - The username of the User.
+   * @param {string} uid - The unique UID of the User.
    * @param {string} email - The email of the User.
-   * @param {string} password_hash - The password's hash of the User.
+   * @param {string} password - The password's UID of the User.
    */
-  constructor(username, email, password_hash) {
+  constructor(username, uid, email, password) {
     if (typeof username !== 'string' || username.length == 0) {
       throw new Error('Invalid or missing username: must be a string.');
+    }
+    if (typeof uid !== 'string' || uid.length == 0) {
+      throw new Error('Invalid or missing uid: must be a string.');
     }
     if (
       typeof email !== 'string' ||
@@ -18,13 +22,14 @@ class User {
     ) {
       throw new Error('Invalid or missing email: must be a valid email.');
     }
-    if (typeof password_hash !== 'string' || password_hash.length == 0) {
+    if (typeof password !== 'string' || password.length == 0) {
       throw new Error('Invalid or missing password: must be a string.');
     }
 
     this.username = username;
+    this.uid = uid;
     this.email = email;
-    this.password_hash = password_hash;
+    this.password = password;
   }
 
   /**
@@ -36,7 +41,8 @@ class User {
     const obj = {
       username: this.username,
       email: this.email,
-      password_hash: this.password_hash,
+      password: this.password,
+      uid: this.uid,
     };
     return obj;
   }
@@ -45,8 +51,9 @@ class User {
    * Static factory method to create a User instance from a raw object.
    * @param {object} rawData - The raw data object, typically from req.body.
    * @param {string} rawData.username
+   * @param {string} rawData.uid
    * @param {string} rawData.email
-   * @param {string} rawData.password_hash
+   * @param {string} rawData.password
    * @returns {User}
    * @throws {Error} if validation fails.
    */
@@ -54,7 +61,12 @@ class User {
     if (!rawData) {
       throw new Error('Raw data object is required.');
     }
-    return new User(rawData.username, rawData.email, rawData.password_hash);
+    return new User(
+      rawData.username,
+      rawData.uid,
+      rawData.email,
+      rawData.password
+    );
   }
 }
 
