@@ -255,15 +255,14 @@ String NetworkHandler::hashPassword(const String &password) {
   const mbedtls_md_info_t *md_info =
       mbedtls_md_info_from_type(MBEDTLS_MD_SHA256);
   if (md_info == NULL) {
-    Serial.println("Failed to get mbedtls md_info for SHA256");
+    DEBUGLN("Failed to get mbedtls md_info for SHA256");
     return "";
   }
   int return_code = mbedtls_md(md_info, (const unsigned char *)toHash.c_str(),
                                toHash.length(), hashResult);
 
   if (return_code != 0) {
-    Serial.printf("mbedtls_md() returned -0x%04X\n",
-                  (unsigned int)-return_code);
+    DEBUGLN("mbedtls_md() returned - " + String(return_code));
     return "";
   }
 

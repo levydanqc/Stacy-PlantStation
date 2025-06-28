@@ -1,4 +1,4 @@
-// #define DEBUG_MODE 1
+#define DEBUG_MODE 1
 
 #include "configuration.h"
 #include "credentials.h"
@@ -35,6 +35,13 @@ void setup() {
   String storedEmail = preferences.getString("email");
   String storedPwd = preferences.getString("user_password");
   String storedPlantName = preferences.getString("plant_name");
+
+  DEBUGLN("Stored Wi-Fi SSID: " + storedSSID);
+  DEBUGLN("Stored Wi-Fi Password: " + storedPassword);
+  DEBUGLN("Stored UID: " + storedUID);
+  DEBUGLN("Stored Email: " + storedEmail);
+  DEBUGLN("Stored Password: " + storedPwd);
+  DEBUGLN("Stored Plant Name: " + storedPlantName);
 
   // if no UID is stored but email and password are present
   if (storedUID.length() < 1 && storedEmail.length() > 1 &&

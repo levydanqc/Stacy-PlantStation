@@ -54,8 +54,8 @@ void CaptivePortal::handleConnect() {
 
   if (error) {
     // If parsing fails, send an error response
-    Serial.print("deserializeJson() failed: ");
-    Serial.println(error.c_str());
+    DEBUG("deserializeJson() failed: ");
+    DEBUGLN(error.c_str());
     server.send(400, "application/json",
                 "{\"success\":false,\"message\":\"Invalid JSON\"}");
     return;
