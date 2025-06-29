@@ -5,6 +5,7 @@ import 'package:stacy_frontend/src/models/plant_data.dart';
 import 'package:stacy_frontend/src/services/logger.dart';
 import 'package:stacy_frontend/src/services/websocket.dart';
 import 'package:stacy_frontend/src/utilities/manager/api_manager.dart';
+import 'package:stacy_frontend/src/views/welcome/welcome_view.dart';
 import 'package:stacy_frontend/src/widgets/home/home_no_plants_view.dart';
 import 'package:stacy_frontend/src/widgets/home/home_show_plants.dart';
 
@@ -31,7 +32,16 @@ class _HomeViewState extends State<HomeView> {
     super.initState();
     log.fine('Initializing HomeView with id: ${widget.id}');
 
-    _plantsFuture = ApiManager.getUserPlants();
+    try {
+      _plantsFuture = ApiManager.getUserPlants();
+    } on Exception catch (e) {
+      if (e.toString() == "Invalid or expired token, user logged out") {
+        log.warning('Invalid or expired token, navigating to WelcomeView');
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          GoRouter.of(context).go(WelcomeView.routeName);
+        });
+      }
+    }
     _pageController = PageController(initialPage: widget.id);
     switchPlant(widget.id);
 

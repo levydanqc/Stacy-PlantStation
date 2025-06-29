@@ -5,7 +5,6 @@ import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:stacy_frontend/src/models/plant.dart';
 import 'package:stacy_frontend/src/services/logger.dart';
 import 'package:stacy_frontend/src/utilities/constants.dart';
-import 'package:stacy_frontend/src/utilities/manager/storage_manager.dart';
 import 'package:stacy_frontend/src/views/welcome/welcome_view.dart';
 import 'package:stacy_frontend/src/widgets/home/home_plant_selector_menu.dart';
 import 'package:stacy_frontend/src/widgets/home/home_settings_menu.dart';
@@ -49,7 +48,7 @@ Widget buildPlantsDisplayView(
         IconButton(
           icon: const Icon(Icons.logout, color: Colors.grey),
           onPressed: () async {
-            await StorageManager().logout();
+            log.info('Logout button pressed');
             GoRouter.of(context).go(WelcomeView.routeName);
           },
         ),

@@ -1,7 +1,3 @@
-import 'dart:convert' show utf8;
-import 'package:crypto/crypto.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart' show dotenv;
-
 String? passwordValidator(String? pwd, [String? confirmPwd]) {
   // Check if the password is at least 8 characters long
   if (pwd == null || pwd.length < 8) {
@@ -37,11 +33,4 @@ String? emailValidator(String? email) {
   return email != null && regex.hasMatch(email)
       ? null
       : 'Please enter a valid email address';
-}
-
-String hashPassword(String pwd) {
-  final salt = dotenv.env['SALT']!;
-  final bytes = utf8.encode(pwd + salt);
-  final digest = sha256.convert(bytes);
-  return digest.toString();
 }

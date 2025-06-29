@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:stacy_frontend/src/services/logger.dart';
 import 'package:stacy_frontend/src/utilities/manager/api_manager.dart';
 import 'package:stacy_frontend/src/utilities/manager/storage_manager.dart';
-import 'package:stacy_frontend/src/utilities/validators.dart';
 import 'package:stacy_frontend/src/views/home_view.dart';
 import 'package:stacy_frontend/src/views/welcome/signup_view.dart';
 import 'package:stacy_frontend/src/widgets/social_button.dart';
@@ -34,8 +33,7 @@ class _LoginViewState extends State<LoginView> {
 
   void _login() {
     if (_formKey.currentState!.validate()) {
-      String hashedPassword = hashPassword(_passwordController.text);
-      ApiManager.loginUser(_emailController.text, hashedPassword)
+      ApiManager.loginUser(_emailController.text, _passwordController.text)
           .then((response) {
         if (response['uid'] != null) {
           log.info('UID: ${response['uid']}');
@@ -184,6 +182,7 @@ class _LoginViewState extends State<LoginView> {
                     }
                     return null;
                   },
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
                 ),
                 const SizedBox(height: 20),
 
@@ -233,6 +232,7 @@ class _LoginViewState extends State<LoginView> {
                     }
                     return null;
                   },
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
                 ),
                 const SizedBox(height: 10),
 

@@ -6,6 +6,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:stacy_frontend/src/models/plant.dart';
 import 'package:stacy_frontend/src/services/logger.dart' show log;
+import 'package:stacy_frontend/src/utilities/manager/secure_storage_manager.dart';
 import 'package:stacy_frontend/src/utilities/manager/storage_manager.dart';
 
 class ApiManager {
@@ -13,7 +14,7 @@ class ApiManager {
 
   static Future<Map<String, String>> getHeaders() async {
     final String uid = await StorageManager().getString('uid') ?? '';
-    final String? bearerToken = dotenv.env['BEARER_TOKEN'];
+    final String? bearerToken = await SecureStorageManager().getBearerToken();
 
     final Map<String, String> headers = {
       'content-type': 'application/json',
@@ -25,19 +26,24 @@ class ApiManager {
     return headers;
   }
 
-  static Future<Map<String, dynamic>> createUser(
-      String email, String hashedPwd) async {
+  static Future<Map<String, dynamic>> signUp(String email, String pwd) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/users'),
+      Uri.parse('$baseUrl/signup'),
       headers: await getHeaders(),
       body: json.encode({
         'email': email,
-        'password': hashedPwd,
-        'username': email.split('@')[0],
+        'password': pwd,
       }),
     );
 
     if (response.statusCode == 201) {
+      log.info('User created successfully: ${response.body}');
+      final String? bearerToken = response.headers['auth_token'];
+      if (bearerToken == null) {
+        throw Exception('Bearer token not found in response headers');
+      }
+
+      await SecureStorageManager().setBearerToken(bearerToken);
       return json.decode(response.body);
     } else {
       throw Exception('Failed to create user');
@@ -45,17 +51,24 @@ class ApiManager {
   }
 
   static Future<Map<String, dynamic>> loginUser(
-      String email, String hashedPwd) async {
+      String email, String pwd) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/sessions'),
+      Uri.parse('$baseUrl/login'),
       headers: await getHeaders(),
       body: json.encode({
         'email': email,
-        'password': hashedPwd,
+        'password': pwd,
       }),
     );
 
     if (response.statusCode == 200) {
+      log.info('User logged in successfully: ${response.body}');
+      final String? bearerToken = response.headers['auth_token'];
+      if (bearerToken == null) {
+        throw Exception('Bearer token not found in response headers');
+      }
+
+      await SecureStorageManager().setBearerToken(bearerToken);
       return json.decode(response.body);
     } else {
       throw Exception(
@@ -80,37 +93,17 @@ class ApiManager {
       }).toList();
 
       return plants;
-    } else {
-      log.warning(
-          'Failed to load user plants, status code: ${response.statusCode}');
-      throw Exception(
-          'Failed to load user plants, status code: ${response.statusCode}');
     }
-  }
 
-  Future<Map<String, dynamic>> fetchData(String endpoint) async {
-    final response = await http.get(Uri.parse('$baseUrl/$endpoint'));
-
-    if (response.statusCode == 200) {
-      return json.decode(response.body);
-    } else {
-      throw Exception(
-          'Failed to load data, status code: ${response.statusCode}');
+    if (response.statusCode == 403) {
+      log.warning('Invalid or expired token, logging out user');
+      await StorageManager().logoutUser();
+      throw Exception('Invalid or expired token, user logged out');
     }
-  }
 
-  Future<Map<String, dynamic>> postData(
-      String endpoint, Map<String, dynamic> data) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/$endpoint'),
-      headers: await getHeaders(),
-      body: json.encode(data),
-    );
-
-    if (response.statusCode == 201) {
-      return json.decode(response.body);
-    } else {
-      throw Exception('Failed to post data');
-    }
+    log.warning(
+        'Failed to load user plants, status code: ${response.statusCode}');
+    throw Exception(
+        'Failed to load user plants, status code: ${response.statusCode}');
   }
 }

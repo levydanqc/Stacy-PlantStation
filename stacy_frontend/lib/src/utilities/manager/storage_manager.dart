@@ -37,6 +37,16 @@ class StorageManager {
     });
   }
 
+  Future<void> logoutUser() async {
+    final prefs = await _prefs;
+    if (prefs.containsKey('uid')) {
+      await prefs.remove('uid');
+      log.info('User logged out successfully.');
+    } else {
+      log.warning('No user is currently logged in.');
+    }
+  }
+
   Future<void> logout() async {
     final prefs = await _prefs;
     await prefs.clear();

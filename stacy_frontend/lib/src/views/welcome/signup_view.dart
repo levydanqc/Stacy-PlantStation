@@ -47,8 +47,7 @@ class _SignUpViewState extends State<SignUpView> {
         ),
       );
 
-      String hashedPassword = hashPassword(_passwordController.text);
-      ApiManager.createUser(_emailController.text, hashedPassword)
+      ApiManager.signUp(_emailController.text, _passwordController.text)
           .then((response) {
         log.info('User created successfully: ${response['userId']}');
 
@@ -182,6 +181,7 @@ class _SignUpViewState extends State<SignUpView> {
                     fillColor: Colors.teal.shade50.withAlpha(128),
                   ),
                   validator: (value) => emailValidator(value),
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
                 ),
                 const SizedBox(height: 20),
 
@@ -227,6 +227,7 @@ class _SignUpViewState extends State<SignUpView> {
                     fillColor: Colors.teal.shade50.withAlpha(128),
                   ),
                   validator: (value) => passwordValidator(value),
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
                 ),
                 const SizedBox(height: 20),
 
@@ -276,6 +277,7 @@ class _SignUpViewState extends State<SignUpView> {
                     value,
                     _passwordController.text,
                   ),
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
                 ),
 
                 const SizedBox(height: 30),
