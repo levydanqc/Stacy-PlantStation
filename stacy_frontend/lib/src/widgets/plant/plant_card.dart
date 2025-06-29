@@ -1,6 +1,5 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:collection/collection.dart';
 
 import 'package:stacy_frontend/src/models/plant.dart';
 import 'package:stacy_frontend/src/services/logger.dart';
@@ -26,6 +25,10 @@ class _PlantCardState extends State<PlantCard> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    log.info("ScreenWidth: $screenWidth");
+
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
       scrollDirection: Axis.vertical,
@@ -86,15 +89,15 @@ class _PlantCardState extends State<PlantCard> {
                         ),
                       ),
                       Expanded(
-                        child: Align(
-                          alignment: Alignment.topRight,
-                          // TODO : fix time check logic
-                          child: switch (widget.plant.plantData.last.timestamp == DateTime.now()) {
-                            true => Icon(Icons.check_circle_rounded),
-                            false => Icon(Icons.warning_rounded)
-                          }
-                        )
-                      )
+                          child: Align(
+                              alignment: Alignment.topRight,
+                              // TODO : fix time check logic
+                              child: switch (
+                                  widget.plant.plantData.last.timestamp ==
+                                      DateTime.now()) {
+                                true => Icon(Icons.check_circle_rounded),
+                                false => Icon(Icons.warning_rounded)
+                              }))
                     ],
                   ),
                 ),
@@ -121,149 +124,161 @@ class _PlantCardState extends State<PlantCard> {
               ),
             ),
             const SizedBox(height: 10),
+            // We want to display an image of a plant on the side left and
+            // the indicators on the right side in a modern card style.
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildIndicatorItem(
-                  Icons.thermostat,
-                  'Temperature',
-                  Column(
-                    children: [
-                      Text(
-                        '${widget.plant.plantData.last.temperature} °C',
-                        style: TextStyle(
-                            color: Colors.grey.shade800,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14),
-                      ),
-                      Text(
-                        '${widget.plant.plantData.last.hic} °C',
-                        style: TextStyle(
-                            color: Colors.grey.shade600,
-                            fontSize: 13,
-                            fontStyle: FontStyle.italic),
-                      ),
-                    ],
-                  ),
-                  Colors.red,
-                ),
-                _buildIndicatorItem(
-                    Icons.water_drop,
-                    'Humidity',
-                    Text(
-                      '${widget.plant.plantData.last.humidity} %',
-                      style: TextStyle(
-                          color: Colors.grey.shade800,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14),
-                    ),
-                    Colors.blue),
-                _buildIndicatorItem(
-                    Icons.opacity,
-                    'Moisture',
-                    Text(
-                      '${widget.plant.plantData.last.moisture} %',
-                      style: TextStyle(
-                          color: Colors.grey.shade800,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14),
-                    ),
-                    Colors.green),
-                _buildIndicatorItem(
-                    Icons.speed,
-                    'Pressure',
-                    Text(
-                      '${widget.plant.plantData.last.humidity} hPa',
-                      style: TextStyle(
-                          color: Colors.grey.shade800,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14),
-                    ),
-                    Colors.purple),
-              ],
-            ),
-            Row(
-              children: [
-                TextButton(
-                  onPressed: () {
-                    log.info(
-                        'Show Temperature graph for ${widget.plant.plantName}');
-                    setState(() {
-                      graphType = PlantGraphType.temperature;
-                    });
-                  },
-                  style: TextButton.styleFrom(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(5),
-                    ),
-                  ),
-                  child: Text(
-                    'Temperature',
-                    style: TextStyle(
-                      color: Colors.teal.shade800,
-                      fontWeight: graphType == PlantGraphType.temperature
-                          ? FontWeight.bold
-                          : FontWeight.normal,
-                    ),
-                  ),
-                ),
-                Text(' | ', style: TextStyle(color: Colors.grey.shade600)),
-                TextButton(
-                  onPressed: () {
-                    log.info(
-                        'Show Humidity graph for ${widget.plant.plantName}');
-                    setState(() {
-                      graphType = PlantGraphType.humidity;
-                    });
-                  },
-                  style: TextButton.styleFrom(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(5),
-                    ),
-                  ),
-                  child: Text(
-                    'Humidity',
-                    style: TextStyle(
-                      color: Colors.teal.shade800,
-                      fontWeight: graphType == PlantGraphType.humidity
-                          ? FontWeight.bold
-                          : FontWeight.normal,
-                    ),
-                  ),
-                ),
-                Text(' | ', style: TextStyle(color: Colors.grey.shade600)),
-                TextButton(
-                  onPressed: () {
-                    log.info(
-                        'Show Moisture graph for ${widget.plant.plantName}');
-                    setState(() {
-                      graphType = PlantGraphType.moisture;
-                    });
-                  },
-                  style: TextButton.styleFrom(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(5),
-                    ),
-                  ),
-                  child: Text(
-                    'Moisture',
-                    style: TextStyle(
-                      color: Colors.teal.shade800,
-                      fontWeight: graphType == PlantGraphType.moisture
-                          ? FontWeight.bold
-                          : FontWeight.normal,
+                // Placeholder for plant image
+                Container(
+                  width: screenWidth * 0.8,
+                  height: screenWidth * 0.4,
+                  decoration: BoxDecoration(
+                    color: bgColor,
+                    borderRadius: BorderRadius.circular(10),
+                    image: DecorationImage(
+                      image: AssetImage('assets/images/plant_in_soil_6.png'),
+                      fit: BoxFit.cover,
                     ),
                   ),
                 ),
               ],
             ),
-            PlantGraph(
-              mainLineColor: blackColor,
-              belowLineColor: Colors.green,
-              aboveLineColor: Colors.red,
-              points: _getGraphPoints(),
-            ),
+            // Row(
+            //   mainAxisAlignment: MainAxisAlignment.spaceAround,
+            //   crossAxisAlignment: CrossAxisAlignment.start,
+            //   children: [
+            //     _buildIndicatorItem(
+            //       Icons.thermostat,
+            //       'Temperature',
+            //       Column(
+            //         children: [
+            //           Text(
+            //             '${widget.plant.plantData.last.temperature} °C',
+            //             style: TextStyle(
+            //                 color: Colors.grey.shade800,
+            //                 fontWeight: FontWeight.bold,
+            //                 fontSize: 14),
+            //           ),
+            //           Text(
+            //             '${widget.plant.plantData.last.hic} °C',
+            //             style: TextStyle(
+            //                 color: Colors.grey.shade600,
+            //                 fontSize: 13,
+            //                 fontStyle: FontStyle.italic),
+            //           ),
+            //         ],
+            //       ),
+            //       Colors.red,
+            //     ),
+            //     _buildIndicatorItem(
+            //       Icons.water_drop,
+            //       'Humidity',
+            //       Text(
+            //         '${widget.plant.plantData.last.humidity} %',
+            //         style: TextStyle(
+            //             color: Colors.grey.shade800,
+            //             fontWeight: FontWeight.bold,
+            //             fontSize: 14),
+            //       ),
+            //       Colors.blue,
+            //     ),
+            //     _buildIndicatorItem(
+            //       Icons.opacity,
+            //       'Moisture',
+            //       Text(
+            //         '${widget.plant.plantData.last.moisture} %',
+            //         style: TextStyle(
+            //             color: Colors.grey.shade800,
+            //             fontWeight: FontWeight.bold,
+            //             fontSize: 14),
+            //       ),
+            //       Colors.green,
+            //     ),
+            //   ],
+            // ),
+            // Row(
+            //   children: [
+            //     TextButton(
+            //       onPressed: () {
+            //         log.info(
+            //             'Show Temperature graph for ${widget.plant.plantName}');
+            //         setState(() {
+            //           graphType = PlantGraphType.temperature;
+            //         });
+            //       },
+            //       style: TextButton.styleFrom(
+            //         shape: RoundedRectangleBorder(
+            //           borderRadius: BorderRadius.circular(5),
+            //         ),
+            //       ),
+            //       child: Text(
+            //         'Temperature',
+            //         style: TextStyle(
+            //           color: Colors.teal.shade800,
+            //           fontWeight: graphType == PlantGraphType.temperature
+            //               ? FontWeight.bold
+            //               : FontWeight.normal,
+            //         ),
+            //       ),
+            //     ),
+            //     Text(' | ', style: TextStyle(color: Colors.grey.shade600)),
+            //     TextButton(
+            //       onPressed: () {
+            //         log.info(
+            //             'Show Humidity graph for ${widget.plant.plantName}');
+            //         setState(() {
+            //           graphType = PlantGraphType.humidity;
+            //         });
+            //       },
+            //       style: TextButton.styleFrom(
+            //         shape: RoundedRectangleBorder(
+            //           borderRadius: BorderRadius.circular(5),
+            //         ),
+            //       ),
+            //       child: Text(
+            //         'Humidity',
+            //         style: TextStyle(
+            //           color: Colors.teal.shade800,
+            //           fontWeight: graphType == PlantGraphType.humidity
+            //               ? FontWeight.bold
+            //               : FontWeight.normal,
+            //         ),
+            //       ),
+            //     ),
+            //     Text(' | ', style: TextStyle(color: Colors.grey.shade600)),
+            //     TextButton(
+            //       onPressed: () {
+            //         log.info(
+            //             'Show Moisture graph for ${widget.plant.plantName}');
+            //         setState(() {
+            //           graphType = PlantGraphType.moisture;
+            //         });
+            //       },
+            //       style: TextButton.styleFrom(
+            //         shape: RoundedRectangleBorder(
+            //           borderRadius: BorderRadius.circular(5),
+            //         ),
+            //       ),
+            //       child: Text(
+            //         'Moisture',
+            //         style: TextStyle(
+            //           color: Colors.teal.shade800,
+            //           fontWeight: graphType == PlantGraphType.moisture
+            //               ? FontWeight.bold
+            //               : FontWeight.normal,
+            //         ),
+            //       ),
+            //     ),
+            //   ],
+            // ),
+            // PlantGraph(
+            //   mainLineColor: blackColor,
+            //   belowLineColor: Colors.green,
+            //   aboveLineColor: Colors.red,
+            //   points: _getGraphPoints(),
+            // ),
           ],
         ),
       ),
