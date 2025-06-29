@@ -100,6 +100,17 @@ void NetworkHandler::sendDataToServer(SensorData sensorData) {
       // Check response
       if (httpResponseCode > 0) {
         DEBUGLN(String("HTTP POST response code: ") + String(httpResponseCode));
+        if (httpResponseCode == HTTP_CODE_FORBIDDEN) {
+          DEBUGLN("Expired or invalid token.");
+          networkPreferences.begin("stacy", true);
+          String email = networkPreferences.getString("email");
+          String password = networkPreferences.getString("user_password");
+          networkPreferences.end();
+
+          NetworkHandler::loginUser(email, password);
+          DEBUGLN("Re-attempting to send data after re-login.");
+          NetworkHandler::sendDataToServer(sensorData);
+        }
       } else {
         DEBUGLN(String("HTTP POST failed, error: ") +
                 http.errorToString(httpResponseCode));
@@ -230,7 +241,17 @@ void NetworkHandler::createPlant(String plantName) {
       // Send POST request
       int httpResponseCode = http.POST(jsonPayload);
 
-      if (httpResponseCode == HTTP_CODE_CREATED) {
+      if (httpResponseCode == HTTP_CODE_FORBIDDEN) {
+        DEBUGLN("Expired or invalid token.");
+        networkPreferences.begin("stacy", true);
+        String email = networkPreferences.getString("email");
+        String password = networkPreferences.getString("user_password");
+        networkPreferences.end();
+
+        NetworkHandler::loginUser(email, password);
+        DEBUGLN("Re-attempting to send data after re-login.");
+        NetworkHandler::createPlant(plantName);
+      } else if (httpResponseCode == HTTP_CODE_CREATED) {
         DEBUGLN(String("HTTP POST response code: ") + String(httpResponseCode));
 
         String response = http.getString();
