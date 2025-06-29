@@ -15,10 +15,18 @@ Preferences networkPreferences;
  * Has a timeout to avoid getting stuck.
  */
 void NetworkHandler::connectToWiFi() {
-  networkPreferences.begin("wifi-creds", true);
+  networkPreferences.begin("stacy", true);
   String ssid = networkPreferences.getString("ssid");
   String password = networkPreferences.getString("wifi_password");
   networkPreferences.end();
+
+  // check if already connected
+  if (WiFi.status() == WL_CONNECTED) {
+    DEBUGLN("Already connected to WiFi.");
+    DEBUG("IP Address: ");
+    DEBUGLN(WiFi.localIP());
+    return;
+  }
 
   DEBUG("Connecting to WiFi: ");
   DEBUGLN(ssid);
@@ -60,15 +68,18 @@ void NetworkHandler::sendDataToServer(SensorData sensorData) {
 
     // Begin HTTP connection
     if (http.begin(client, String(SERVER_URL) + "/weather")) {
-      // Set headers
-      http.addHeader("Content-Type", "application/json");
-      http.addHeader("Authorization", "Bearer " + String(BEARER_TOKEN));
-      http.addHeader("Device-ID", getMacAddress());
-
-      networkPreferences.begin("wifi-creds", true);
+      networkPreferences.begin("stacy", true);
+      String bearerToken = networkPreferences.getString("bearer_token", "");
       String uid = networkPreferences.getString("uid", "");
       networkPreferences.end();
 
+      DEBUG("Bearer Token: ");
+      DEBUGLN(bearerToken);
+
+      // Set headers
+      http.addHeader("Content-Type", "application/json");
+      http.addHeader("Authorization", "Bearer " + bearerToken);
+      http.addHeader("Device-ID", getMacAddress());
       http.addHeader("UID", uid);
 
       String jsonPayload =
@@ -108,11 +119,14 @@ void NetworkHandler::sendDataToServer(SensorData sensorData) {
  * @brief Logs in the user with the provided email and password.
  * @param email The user's email.
  * @param password The user's password.
- * @return The user ID if login is successful, empty string otherwise.
+ * @return True if login is successful, false otherwise.
  */
-String NetworkHandler::loginUser(const String &email, const String &password) {
-  NetworkHandler::connectToWiFi();
-  delay(DELAY_STANDARD);
+bool NetworkHandler::loginUser(const String &email, const String &password) {
+
+  if (WiFi.status() != WL_CONNECTED) {
+    NetworkHandler::connectToWiFi();
+    delay(DELAY_STANDARD);
+  }
 
   if (WiFi.status() == WL_CONNECTED) {
     HTTPClient http;
@@ -122,25 +136,26 @@ String NetworkHandler::loginUser(const String &email, const String &password) {
     DEBUGLN(email);
 
     // Begin HTTP connection
-    if (http.begin(client, String(SERVER_URL) + "/sessions")) {
-
-      String hashedPassword = NetworkHandler::hashPassword(password);
-
+    if (http.begin(client, String(SERVER_URL) + "/login")) {
       http.addHeader("Content-Type", "application/json");
-      http.addHeader("Authorization", "Bearer " + String(BEARER_TOKEN));
 
-      String jsonPayload = "{\"email\":\"" + email + "\",\"password\":\"" +
-                           hashedPassword + "\"}";
+      String jsonPayload =
+          "{\"email\":\"" + email + "\",\"password\":\"" + password + "\"}";
 
       DEBUG("Sending JSON payload: ");
       DEBUGLN(jsonPayload);
 
-      // Send POST request
+      // Send POST request and get response headers for auth_token
+      const char *headerKeys[] = {"auth_token"};
+      const size_t headerKeysCount = sizeof(headerKeys) / sizeof(headerKeys[0]);
+      http.collectHeaders(headerKeys, headerKeysCount);
+
       int httpResponseCode = http.POST(jsonPayload);
 
       // Check response
       if (httpResponseCode > 0) {
         String response = http.getString();
+        String authToken = http.header("auth_token");
         DEBUGLN(String("HTTP POST response code: ") + String(httpResponseCode));
         DEBUGLN("Response: " + response);
         http.end();
@@ -149,34 +164,45 @@ String NetworkHandler::loginUser(const String &email, const String &password) {
         JsonDocument doc;
         DeserializationError error = deserializeJson(doc, response);
         if (!error) {
+          String uid = doc["uid"].as<String>();
           DEBUGLN("Parsed JSON successfully.");
-          DEBUG("User ID: ");
-          DEBUGLN(doc["uid"].as<String>());
+          DEBUGLN("User ID: " + uid);
 
-          return doc["uid"].as<String>();
+          // Store the auth token and user ID in preferences
+          networkPreferences.begin("stacy", false);
+          networkPreferences.putString("bearer_token", authToken);
+          networkPreferences.putString("uid", uid);
+          networkPreferences.end();
+
+          if (uid.isEmpty())
+            return false;
+
+          return true;
         } else {
           DEBUGLN("Failed to parse JSON response: " + String(error.c_str()));
-          return "";
+          return false;
         }
       } else {
         DEBUGLN(String("HTTP POST failed, error: ") +
                 http.errorToString(httpResponseCode));
         http.end();
-        return "";
+        return false;
       }
     } else {
       DEBUGLN("HTTP connection failed. Unable to begin.");
-      return "";
+      return false;
     }
   } else {
     DEBUGLN("WiFi not connected. Cannot log in.");
-    return "";
+    return false;
   }
 }
 
 void NetworkHandler::createPlant(String plantName) {
-  NetworkHandler::connectToWiFi();
-  delay(DELAY_STANDARD);
+  if (WiFi.status() != WL_CONNECTED) {
+    NetworkHandler::connectToWiFi();
+    delay(DELAY_STANDARD);
+  }
 
   if (WiFi.status() == WL_CONNECTED) {
     HTTPClient http;
@@ -186,12 +212,13 @@ void NetworkHandler::createPlant(String plantName) {
     DEBUGLN(SERVER_URL);
 
     if (http.begin(client, String(SERVER_URL) + "/plants")) {
-      networkPreferences.begin("wifi-creds", true);
+      networkPreferences.begin("stacy", true);
       String uid = networkPreferences.getString("uid", "");
+      String bearerToken = networkPreferences.getString("bearer_token", "");
       networkPreferences.end();
 
       http.addHeader("Content-Type", "application/json");
-      http.addHeader("Authorization", "Bearer " + String(BEARER_TOKEN));
+      http.addHeader("Authorization", "Bearer " + bearerToken);
       http.addHeader("Device-ID", getMacAddress());
       http.addHeader("UID", uid);
 
@@ -203,8 +230,32 @@ void NetworkHandler::createPlant(String plantName) {
       // Send POST request
       int httpResponseCode = http.POST(jsonPayload);
 
-      if (httpResponseCode > 0) {
+      if (httpResponseCode == HTTP_CODE_CREATED) {
         DEBUGLN(String("HTTP POST response code: ") + String(httpResponseCode));
+
+        String response = http.getString();
+        DEBUGLN("Response: " + response);
+
+        // Parse the plant ID from the response (assuming it's in JSON format)
+        JsonDocument doc;
+        DeserializationError error = deserializeJson(doc, response);
+        if (!error) {
+          String plantId = doc["plant_id"].as<String>();
+          DEBUGLN("Parsed JSON successfully.");
+          DEBUGLN("Plant ID: " + plantId);
+          // Store the plant ID in preferences
+          networkPreferences.begin("stacy", false);
+          networkPreferences.putString("plant_id", plantId);
+          networkPreferences.end();
+
+          if (plantId.isEmpty()) {
+            DEBUGLN("Failed to create plant. Plant ID is empty.");
+          } else {
+            DEBUGLN("Plant created successfully with ID: " + plantId);
+          }
+        } else {
+          DEBUGLN("Failed to parse JSON response: " + String(error.c_str()));
+        }
       } else {
         DEBUGLN(String("HTTP POST failed, error: ") +
                 http.errorToString(httpResponseCode));
@@ -245,33 +296,4 @@ String NetworkHandler::getMacAddress() {
 
     return "00:00:00:00:00:00";
   }
-}
-
-String NetworkHandler::hashPassword(const String &password) {
-  String toHash = password + SALT;
-
-  byte hashResult[32];
-
-  const mbedtls_md_info_t *md_info =
-      mbedtls_md_info_from_type(MBEDTLS_MD_SHA256);
-  if (md_info == NULL) {
-    DEBUGLN("Failed to get mbedtls md_info for SHA256");
-    return "";
-  }
-  int return_code = mbedtls_md(md_info, (const unsigned char *)toHash.c_str(),
-                               toHash.length(), hashResult);
-
-  if (return_code != 0) {
-    DEBUGLN("mbedtls_md() returned - " + String(return_code));
-    return "";
-  }
-
-  String hashString = "";
-  for (int i = 0; i < 32; i++) {
-    char hex[3];
-    sprintf(hex, "%02x", hashResult[i]);
-    hashString += hex;
-  }
-
-  return hashString;
 }
