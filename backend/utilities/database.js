@@ -204,7 +204,7 @@ function getPlantByUIDAndDeviceId(uid, device_id) {
 /**
  * Creates a new user in the database.
  * @param {User} user - The user object containing username, email, and password.
- * @return {Promise<void>} A promise that resolves when the user is created, or rejects on error.
+ * @return {Promise<string>} A promise that resolves with the user's uid, or rejects on error.
  */
 function createUser(user) {
   return new Promise((resolve, reject) => {
@@ -345,28 +345,6 @@ function getUserByEmail(email) {
     });
   });
 }
-
-/**
- * Verifies a user's password against the stored hash.
- * @param {number} user_id - The ID of the user.
- * @param {string} hashedPwd - The hashed password to verify.
- * @return {Promise<boolean>} A promise that resolves with true if the password matches, false otherwise.
- */
-function verifyUserPassword(user_id, hashedPwd) {
-  return new Promise((resolve, reject) => {
-    db.get(sql.getUserPasswordSQL, [user_id], (err, row) => {
-      if (err) {
-        console.error('Error fetching user password:', err.message);
-        reject(err);
-      } else if (row) {
-        resolve(row.password === hashedPwd);
-      } else {
-        resolve(false);
-      }
-    });
-  });
-}
-
 /**
  * Retrieves all plants and their data for a user by their UID.
  * @param {string} uid - The unique identifier of the user.
@@ -431,6 +409,11 @@ function getPlantsDataByUserUID(uid) {
   });
 }
 
+/**
+ * Retrieves a plant by its device ID.
+ * @param {string} device_id - The ID of the device (MAC address).
+ * @return {Promise<Object|null>} A promise that resolves with the plant object if found, or null if not found.
+ */
 function getPlantByDeviceID(device_id) {
   return new Promise((resolve, reject) => {
     db.get(sql.getPlantByDeviceIdSQL, [device_id], (err, row) => {
@@ -441,6 +424,24 @@ function getPlantByDeviceID(device_id) {
         resolve(row);
       } else {
         resolve(null);
+      }
+    });
+  });
+}
+
+/**
+ * Checks if an email is unique in the database.
+ * @param {string} email - The email address to check.
+ * @return {Promise<boolean>} A promise that resolves with true if the email is unique, false otherwise.
+ */
+function isUniqueEmail(email) {
+  return new Promise((resolve, reject) => {
+    db.get(sql.getUserByEmailSQL, [email], (err, row) => {
+      if (err) {
+        console.error('Error checking unique email:', err.message);
+        reject(err);
+      } else {
+        resolve(!row); // If row is null, email is unique
       }
     });
   });
@@ -463,7 +464,7 @@ module.exports = {
   createUser,
   createPlant,
   getUserByEmail,
-  verifyUserPassword,
   getPlantsDataByUserUID,
   getPlantByDeviceID,
+  isUniqueEmail,
 };

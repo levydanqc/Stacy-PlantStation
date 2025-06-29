@@ -1,10 +1,10 @@
 const PlantData = require('../models/PlantData');
 const database = require('../utilities/database');
 const broadcast = require('../utilities/broadcast');
-const authenticateToken = require('../middleware/authenticateToken.js');
+const verifyToken = require('../middleware/verifyToken.js');
 
 const weatherRoutes = (app, clients) => {
-  app.use('/weather', authenticateToken);
+  app.use('/weather', verifyToken);
 
   app.post('/weather', (req, res) => {
     const rawDataFromDevice = req.body;
@@ -13,6 +13,20 @@ const weatherRoutes = (app, clients) => {
 
     console.log('Received data from device: ', device_id);
     console.log('Received data from user: ', uid);
+
+    if (
+      rawDataFromDevice.temperature == 0 ||
+      rawDataFromDevice.humidity == 0 ||
+      rawDataFromDevice.moisture == 0 ||
+      rawDataFromDevice.hic == 0 ||
+      rawDataFromDevice.batteryVoltage == 0 ||
+      rawDataFromDevice.batteryPercentage == 0
+    ) {
+      console.warn('Unauthorized: Invalid sensor data received');
+      return res
+        .status(400)
+        .send({ message: 'Unauthorized: Invalid sensor data received.' });
+    }
 
     if (!device_id || device_id.length === 0) {
       console.warn('Unauthorized: No Device-ID provided');
