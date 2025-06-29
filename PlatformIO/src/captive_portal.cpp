@@ -54,8 +54,8 @@ void CaptivePortal::handleConnect() {
 
   if (error) {
     // If parsing fails, send an error response
-    Serial.print("deserializeJson() failed: ");
-    Serial.println(error.c_str());
+    DEBUG("deserializeJson() failed: ");
+    DEBUGLN(error.c_str());
     server.send(400, "application/json",
                 "{\"success\":false,\"message\":\"Invalid JSON\"}");
     return;
@@ -76,36 +76,34 @@ void CaptivePortal::handleConnect() {
   DEBUGLN("user_password: " + String(user_password));
   DEBUGLN("plant_name: " + String(plant_name));
 
-  if (plant_name && ssid && wifi_password && email && user_password) {
-    delay(DELAY_SHORT);
-
-    initialModePreferences.begin("wifi-creds", false);
-    initialModePreferences.putString("ssid", ssid);
-    initialModePreferences.putString("wifi_password", wifi_password);
-    initialModePreferences.putString("email", email);
-    initialModePreferences.putString("user_password", user_password);
-    initialModePreferences.putString("plant_name", plant_name);
-    initialModePreferences.end();
-
-    String uid = NetworkHandler::loginUser(email, user_password);
-
-    if (!uid.isEmpty()) {
-      initialModePreferences.begin("wifi-creds", false);
-      initialModePreferences.putString("uid", uid);
-      initialModePreferences.end();
-      NetworkHandler::createPlant(String(plant_name));
-    }
-
-    server.send(200, "text/plain",
-                "Attempting to connect to WiFi. The device will restart soon.");
-
-    delay(DELAY_STANDARD);
-
-    ESP.restart();
-  } else {
-    server.send(400, "text/plain",
-                "Invalid request. Missing SSID or password.");
+  if (!plant_name || !ssid || !wifi_password || !email || !user_password) {
+    server.send(400, "text/plain", "Invalid request. Missing required fields.");
+    return;
   }
+  delay(DELAY_SHORT);
+
+  initialModePreferences.begin("stacy", false);
+  initialModePreferences.putString("ssid", ssid);
+  initialModePreferences.putString("wifi_password", wifi_password);
+  initialModePreferences.putString("email", email);
+  initialModePreferences.putString("user_password", user_password);
+  initialModePreferences.putString("plant_name", plant_name);
+  initialModePreferences.end();
+
+  NetworkHandler::connectToWiFi();
+  delay(DELAY_STANDARD);
+
+  bool loggedIn = NetworkHandler::loginUser(email, user_password);
+  if (!loggedIn) {
+    NetworkHandler::createPlant(String(plant_name));
+  }
+
+  server.send(200, "text/plain",
+              "Attempting to connect to WiFi. The device will restart soon.");
+
+  delay(DELAY_SHORT);
+
+  ESP.restart();
 }
 
 void CaptivePortal::handleScan() {
