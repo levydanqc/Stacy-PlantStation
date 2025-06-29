@@ -19,7 +19,9 @@ class Plant {
     }
     // TODO : implement logic to validate plant_name
     if (typeof plant_name !== 'string' || plant_name.length == 0) {
-      throw new Error('Invalid or missing plant_name: must be a valid email.');
+      throw new Error(
+        'Invalid or missing plant_name: must be a non-empty string.'
+      );
     }
 
     this.device_id = device_id;

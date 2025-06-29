@@ -1,35 +1,8 @@
-const crypto = require('crypto');
-
 const database = require('../utilities/database');
-const authenticateToken = require('../middleware/authenticateToken.js');
-
-const User = require('../models/User');
+const verifyToken = require('../middleware/verifyToken.js');
 
 const usersRoutes = (app) => {
-  app.use('/users', authenticateToken);
-  app.use('/users/:uid/plants', authenticateToken);
-
-  app.post('/users', (req, res) => {
-    const rawDataFromDevice = req.body;
-    const uid = crypto.randomBytes(8).toString('hex');
-    rawDataFromDevice.uid = uid;
-
-    const userObject = User.fromObject(rawDataFromDevice);
-
-    console.log('Received data : ', JSON.stringify(userObject));
-
-    database
-      .createUser(userObject)
-      .then((uid) => {
-        console.log('Created user');
-
-        return res.status(201).send({ uid: uid });
-      })
-      .catch((err) => {
-        console.error('Error creating user:', err.message);
-        return res.status(500).send({ message: 'Internal Server Error' });
-      });
-  });
+  app.use('/users/:uid/plants', verifyToken);
 
   app.get('/users/:uid/plants', (req, res) => {
     const uid = req.params.uid;
