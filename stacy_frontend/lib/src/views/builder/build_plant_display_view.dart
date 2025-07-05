@@ -5,9 +5,11 @@ import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:stacy_frontend/src/models/plant.dart';
 import 'package:stacy_frontend/src/services/logger.dart';
 import 'package:stacy_frontend/src/utilities/constants.dart';
-import 'package:stacy_frontend/src/views/welcome/welcome_view.dart';
-import 'package:stacy_frontend/src/widgets/home/home_plant_selector_menu.dart';
-import 'package:stacy_frontend/src/widgets/home/home_settings_menu.dart';
+import 'package:stacy_frontend/src/utilities/manager/secure_storage_manager.dart';
+import 'package:stacy_frontend/src/utilities/manager/storage_manager.dart';
+import 'package:stacy_frontend/src/views/welcome/loading_view.dart';
+import 'package:stacy_frontend/src/widgets/home/build_plant_selector_menu.dart';
+import 'package:stacy_frontend/src/widgets/home/build_settings_menu.dart';
 import 'package:stacy_frontend/src/widgets/plant/plant_card.dart';
 
 Widget buildPlantsDisplayView(
@@ -18,6 +20,7 @@ Widget buildPlantsDisplayView(
     Function(int, [bool]) switchPlant) {
   log.info('Building Plants Display View with currentPage: $currentPage');
   return Scaffold(
+    backgroundColor: bgColor,
     appBar: AppBar(
       backgroundColor: bgColor,
       elevation: 0,
@@ -45,17 +48,10 @@ Widget buildPlantsDisplayView(
             log.info('Notifications button pressed');
           },
         ),
-        IconButton(
-          icon: const Icon(Icons.logout, color: Colors.grey),
-          onPressed: () async {
-            log.info('Logout button pressed');
-            GoRouter.of(context).go(WelcomeView.routeName);
-          },
-        ),
       ],
     ),
     body: Container(
-      margin: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 15.0),
+      margin: const EdgeInsets.symmetric(horizontal: 30.0, vertical: 15.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisAlignment: MainAxisAlignment.spaceAround,

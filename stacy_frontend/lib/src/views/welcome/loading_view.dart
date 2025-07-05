@@ -5,7 +5,7 @@ import 'package:stacy_frontend/src/services/logger.dart';
 import 'package:stacy_frontend/src/utilities/constants.dart';
 import 'package:stacy_frontend/src/utilities/manager/storage_manager.dart';
 import 'package:stacy_frontend/src/views/home_view.dart';
-import 'package:stacy_frontend/src/views/welcome/welcome_view.dart';
+import 'package:stacy_frontend/src/views/welcome/login_view.dart';
 
 class LoadingView extends StatefulWidget {
   static const String routeName = '/';
@@ -22,11 +22,11 @@ class _LoadingViewState extends State<LoadingView> {
 
     StorageManager().isLoggedIn().then((isLoggedIn) {
       if (isLoggedIn && mounted) {
-        log.finer('Navigating to HomeView');
+        log.finer('Navigating to Home');
         GoRouter.of(context).go(HomeView.routeName);
       } else if (mounted) {
-        log.finer('Navigating to WelcomeView');
-        GoRouter.of(context).go(WelcomeView.routeName);
+        log.finer('Navigating to LoginView');
+        GoRouter.of(context).go(LoginView.routeName);
       }
     }).catchError((error) {
       log.severe('Error checking auth status: $error');

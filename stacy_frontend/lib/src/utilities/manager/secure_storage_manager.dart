@@ -19,4 +19,8 @@ class SecureStorageManager {
   Future<String?> getBearerToken() async {
     return await _secureStorage.read(key: 'bearerToken');
   }
+
+  Future<void> logout() async {
+    await _secureStorage.deleteAll();
+  }
 }

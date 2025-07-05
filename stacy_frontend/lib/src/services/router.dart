@@ -6,7 +6,6 @@ import 'package:stacy_frontend/src/views/home_view.dart';
 import 'package:stacy_frontend/src/views/welcome/loading_view.dart';
 import 'package:stacy_frontend/src/views/welcome/login_view.dart';
 import 'package:stacy_frontend/src/views/welcome/signup_view.dart';
-import 'package:stacy_frontend/src/views/welcome/welcome_view.dart';
 
 final GoRouter router = GoRouter(
   routes: <RouteBase>[
@@ -14,12 +13,6 @@ final GoRouter router = GoRouter(
       path: LoadingView.routeName,
       builder: (BuildContext context, GoRouterState state) {
         return const LoadingView();
-      },
-    ),
-    GoRoute(
-      path: WelcomeView.routeName,
-      builder: (BuildContext context, GoRouterState state) {
-        return const WelcomeView();
       },
     ),
     GoRoute(
@@ -36,13 +29,17 @@ final GoRouter router = GoRouter(
     ),
     GoRoute(
         path: HomeView.routeName,
-        redirect: (BuildContext context, GoRouterState state) {
-          if (state.fullPath == HomeView.routeName) {
-            log.fine(
-                'Redirecting from ${state.fullPath} to ${HomeView.routeName}/0');
-            return '${HomeView.routeName}/0';
-          }
-          return null; // Otherwise, allow the route or its children to handle it
+        // redirect: (BuildContext context, GoRouterState state) {
+        //   if (state.fullPath == HomeView.routeName) {
+        //     log.fine(
+        //         'Redirecting from ${state.fullPath} to ${HomeView.routeName}/0');
+        //     return '${HomeView.routeName}/0';
+        //   }
+        //   return null; // Otherwise, allow the route or its children to handle it
+        // },
+        builder: (BuildContext context, GoRouterState state) {
+          log.shout('Navigating to HomeView without id');
+          return HomeView();
         },
         routes: [
           GoRoute(
@@ -62,7 +59,6 @@ final GoRouter router = GoRouter(
     }
 
     final bool isAuthRoute = [
-      WelcomeView.routeName,
       LoginView.routeName,
       SignUpView.routeName,
     ].contains(state.uri.path);
@@ -74,8 +70,8 @@ final GoRouter router = GoRouter(
     // If the user is NOT authenticated AND trying to go to a protected route,
     // redirect them to the welcome screen.
     if (!isAuthenticated && !isAuthRoute) {
-      log.fine('Redirecting to WelcomeView (not authenticated)');
-      return WelcomeView.routeName;
+      log.fine('Redirecting to LoadingView (not authenticated)');
+      return LoadingView.routeName;
     }
 
     // If the user IS authenticated AND trying to go to an authentication/welcome route,

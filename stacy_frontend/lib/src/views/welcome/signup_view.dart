@@ -3,10 +3,13 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:stacy_frontend/src/services/logger.dart';
+import 'package:stacy_frontend/src/utilities/constants.dart';
 import 'package:stacy_frontend/src/utilities/manager/storage_manager.dart';
 import 'package:stacy_frontend/src/utilities/validators.dart';
 import 'package:stacy_frontend/src/views/home_view.dart';
 import 'package:stacy_frontend/src/views/welcome/login_view.dart';
+import 'package:stacy_frontend/src/widgets/home/home_input_field.dart';
+import 'package:stacy_frontend/src/widgets/lottie_animation.dart';
 import 'package:stacy_frontend/src/widgets/social_button.dart';
 import 'package:stacy_frontend/src/utilities/manager/api_manager.dart';
 
@@ -27,7 +30,6 @@ class _SignUpViewState extends State<SignUpView> {
       TextEditingController();
 
   bool _isPasswordVisible = false;
-  bool _isConfirmPasswordVisible = false;
 
   @override
   void dispose() {
@@ -116,179 +118,113 @@ class _SignUpViewState extends State<SignUpView> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: Colors.teal.shade700),
-          onPressed: () {
-            GoRouter.of(context).go(HomeView.routeName);
-          },
-        ),
-        title: Text(
-          'Create Account',
-          style: TextStyle(
-            color: Colors.teal.shade700,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        centerTitle: true,
-      ),
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(30.0),
+          padding:
+              const EdgeInsets.symmetric(horizontal: 150.0, vertical: 10.0),
           child: Form(
             key: _formKey,
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                LottieAnimation(
+                  assetPath: 'assets/lotties/1751322622263.json',
+                  height: 200,
+                  repeat: true,
+                ),
                 Text(
                   'Join Stacy today!',
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
-                    color: Colors.teal.shade700,
+                    color: textPrimaryColor,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'Create your account to get started with Stacy',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: textGreyColor,
                   ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 40),
-
-                // Email Input
-                TextFormField(
+                HomeInputField(
+                  label: 'Email',
+                  hint: 'Enter your email',
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
-                  textInputAction: TextInputAction.next,
-                  decoration: InputDecoration(
-                    labelText: 'Email',
-                    hintText: 'Enter your email',
-                    prefixIcon: Icon(Icons.email, color: Colors.teal.shade400),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.teal.shade200),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide:
-                          BorderSide(color: Colors.teal.shade300, width: 1.5),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide:
-                          BorderSide(color: Colors.teal.shade600, width: 2),
-                    ),
-                    filled: true,
-                    fillColor: Colors.teal.shade50.withAlpha(128),
-                  ),
+                  prefixIcon: Icon(Icons.email, color: primaryColor),
                   validator: (value) => emailValidator(value),
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  textInputAction: TextInputAction.next,
                 ),
                 const SizedBox(height: 20),
-
-                // Password Input
-                TextFormField(
+                HomeInputField(
+                  label: 'Password',
+                  hint: 'Enter your password',
                   controller: _passwordController,
-                  obscureText: !_isPasswordVisible,
-                  textInputAction: TextInputAction.next,
-                  decoration: InputDecoration(
-                    labelText: 'Password',
-                    hintText: 'Enter your password',
-                    prefixIcon: Icon(Icons.lock, color: Colors.teal.shade400),
-                    suffixIcon: ExcludeFocus(
-                      child: IconButton(
-                        icon: Icon(
-                          _isPasswordVisible
-                              ? Icons.visibility
-                              : Icons.visibility_off,
-                          color: Colors.grey,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _isPasswordVisible = !_isPasswordVisible;
-                          });
-                        },
+                  keyboardType: TextInputType.visiblePassword,
+                  prefixIcon: Icon(Icons.lock, color: Colors.teal.shade400),
+                  suffixIcon: ExcludeFocus(
+                    child: IconButton(
+                      icon: Icon(
+                        _isPasswordVisible
+                            ? Icons.visibility
+                            : Icons.visibility_off,
+                        color: Colors.grey,
                       ),
+                      onPressed: () {
+                        setState(() {
+                          _isPasswordVisible = !_isPasswordVisible;
+                        });
+                      },
                     ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.teal.shade200),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide:
-                          BorderSide(color: Colors.teal.shade300, width: 1.5),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide:
-                          BorderSide(color: Colors.teal.shade600, width: 2),
-                    ),
-                    filled: true,
-                    fillColor: Colors.teal.shade50.withAlpha(128),
                   ),
                   validator: (value) => passwordValidator(value),
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  textInputAction: TextInputAction.next,
+                  obscureText: !_isPasswordVisible,
                 ),
                 const SizedBox(height: 20),
-
-                TextFormField(
+                HomeInputField(
+                  label: 'Confirm Password',
+                  hint: 'Re-enter your password',
                   controller: _confirmPasswordController,
-                  obscureText: !_isConfirmPasswordVisible,
-                  textInputAction: TextInputAction.done,
-                  decoration: InputDecoration(
-                    labelText: 'Confirm Password',
-                    hintText: 'Re-enter your password',
-                    prefixIcon:
-                        Icon(Icons.lock_reset, color: Colors.teal.shade400),
-                    suffixIcon: ExcludeFocus(
-                      child: IconButton(
-                        icon: Icon(
-                          _isConfirmPasswordVisible
-                              ? Icons.visibility
-                              : Icons.visibility_off,
-                          color: Colors.grey,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _isConfirmPasswordVisible =
-                                !_isConfirmPasswordVisible;
-                          });
-                        },
+                  keyboardType: TextInputType.visiblePassword,
+                  prefixIcon:
+                      Icon(Icons.lock_reset, color: Colors.teal.shade400),
+                  suffixIcon: ExcludeFocus(
+                    child: IconButton(
+                      icon: Icon(
+                        _isPasswordVisible
+                            ? Icons.visibility
+                            : Icons.visibility_off,
+                        color: Colors.grey,
                       ),
+                      onPressed: () {
+                        setState(() {
+                          _isPasswordVisible = !_isPasswordVisible;
+                        });
+                      },
                     ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.teal.shade200),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide:
-                          BorderSide(color: Colors.teal.shade300, width: 1.5),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide:
-                          BorderSide(color: Colors.teal.shade600, width: 2),
-                    ),
-                    filled: true,
-                    fillColor: Colors.teal.shade50.withAlpha(128),
                   ),
                   validator: (value) => passwordValidator(
                     value,
                     _passwordController.text,
                   ),
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  textInputAction: TextInputAction.done,
+                  obscureText: !_isPasswordVisible,
                 ),
-
                 const SizedBox(height: 30),
-
                 SizedBox(
                   width: double.infinity,
                   height: 55,
                   child: ElevatedButton(
                     onPressed: _signUp,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.teal.shade600,
+                      backgroundColor: accentColor,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -305,7 +241,6 @@ class _SignUpViewState extends State<SignUpView> {
                   ),
                 ),
                 const SizedBox(height: 30),
-
                 Row(
                   children: [
                     Expanded(child: Divider(color: Colors.grey.shade400)),
@@ -320,7 +255,6 @@ class _SignUpViewState extends State<SignUpView> {
                   ],
                 ),
                 const SizedBox(height: 30),
-
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
@@ -345,28 +279,41 @@ class _SignUpViewState extends State<SignUpView> {
                   ],
                 ),
                 const SizedBox(height: 30),
-
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      "Already have an account?",
-                      style: TextStyle(color: Colors.grey.shade700),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        log.info('Login link pressed');
-                        GoRouter.of(context).go(LoginView.routeName);
-                      },
-                      child: Text(
-                        'Log In',
-                        style: TextStyle(
-                          color: Colors.teal.shade600,
-                          fontWeight: FontWeight.bold,
-                        ),
+                Container(
+                  alignment: Alignment.center,
+                  child: TextButton(
+                    onPressed: () {
+                      log.info('Sign Up link pressed');
+                      GoRouter.of(context).go(LoginView.routeName);
+                    },
+                    style: TextButton.styleFrom(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
                       ),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8.0, vertical: 4.0),
+                      foregroundColor: textSecondaryColor,
+                      overlayColor: textSecondaryColor,
                     ),
-                  ],
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          "Already have an account? ",
+                          style: TextStyle(
+                            color: textSecondaryColor,
+                          ),
+                        ),
+                        Text(
+                          "Log In",
+                          style: TextStyle(
+                            color: textSecondaryColor,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ],
             ),

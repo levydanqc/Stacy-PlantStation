@@ -72,7 +72,7 @@ class ApiManager {
       return json.decode(response.body);
     } else {
       throw Exception(
-          'Failed to login user, status code: ${response.statusCode} and body: ${response.body}');
+          json.decode(response.body)['error'] ?? 'Failed to login user');
     }
   }
 
@@ -97,7 +97,7 @@ class ApiManager {
 
     if (response.statusCode == 403) {
       log.warning('Invalid or expired token, logging out user');
-      await StorageManager().logoutUser();
+      await StorageManager().logout();
       throw Exception('Invalid or expired token, user logged out');
     }
 

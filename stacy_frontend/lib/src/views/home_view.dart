@@ -5,16 +5,17 @@ import 'package:stacy_frontend/src/models/plant_data.dart';
 import 'package:stacy_frontend/src/services/logger.dart';
 import 'package:stacy_frontend/src/services/websocket.dart';
 import 'package:stacy_frontend/src/utilities/manager/api_manager.dart';
-import 'package:stacy_frontend/src/views/welcome/welcome_view.dart';
-import 'package:stacy_frontend/src/widgets/home/home_no_plants_view.dart';
-import 'package:stacy_frontend/src/widgets/home/home_show_plants.dart';
+import 'package:stacy_frontend/src/views/builder/build_plant_overview.dart';
+import 'package:stacy_frontend/src/views/welcome/login_view.dart';
+import 'package:stacy_frontend/src/views/builder/build_no_plants_view.dart';
+import 'package:stacy_frontend/src/views/builder/build_plant_display_view.dart';
 
 // ignore: must_be_immutable
 class HomeView extends StatefulWidget {
   static const String routeName = '/home';
-  int id;
+  int? id;
 
-  HomeView({super.key, required this.id});
+  HomeView({super.key, this.id});
 
   @override
   State<HomeView> createState() => _HomeViewState();
@@ -36,14 +37,17 @@ class _HomeViewState extends State<HomeView> {
       _plantsFuture = ApiManager.getUserPlants();
     } on Exception catch (e) {
       if (e.toString() == "Invalid or expired token, user logged out") {
-        log.warning('Invalid or expired token, navigating to WelcomeView');
+        log.warning('Invalid or expired token, navigating to LoginView');
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          GoRouter.of(context).go(WelcomeView.routeName);
+          GoRouter.of(context).go(LoginView.routeName);
         });
       }
     }
-    _pageController = PageController(initialPage: widget.id);
-    switchPlant(widget.id);
+    _pageController = PageController(initialPage: widget.id ?? 0);
+
+    if (widget.id != null) {
+      switchPlant(widget.id!);
+    }
 
     _pageController
         .addListener(() => switchPlant(_pageController.page!.round()));
@@ -130,8 +134,11 @@ class _HomeViewState extends State<HomeView> {
     log.finest('Run HomeView _buildView');
 
     if (_webSocketService.isConnected && _weatherData.isNotEmpty) {
-      return buildPlantsDisplayView(
-          context, _weatherData, _pageController, widget.id, switchPlant);
+      if (widget.id != null) {
+        return buildPlantsDisplayView(
+            context, _weatherData, _pageController, widget.id!, switchPlant);
+      }
+      return buildPlantOverviewView(context, _weatherData);
     } else if (_webSocketService.isConnected && _weatherData.isEmpty) {
       return buildNoPlantsView(context);
     } else if (!_webSocketService.isConnected) {
