@@ -12,6 +12,7 @@ Preferences preferences;
 #include <captive_portal.h>
 #include <network_handler.h>
 #include <sensor_handler.h>
+#include <web_provisioner.h>
 
 // --- Function Prototypes ---
 void powerOff();
@@ -62,11 +63,10 @@ void setup() {
   }
 
   // if uid is stored but no plant_id, create one
-  if (storedUID.length() > 1 && storedPlantId.length() < 1 &&
-      storedPlantName.length() > 1) {
+  if (storedUID.length() > 1 && storedPlantId.length() < 1) {
     DEBUGLN("No Plant ID found but UID and Plant Name are present. Attempting "
             "to create Plant ID.");
-    NetworkHandler::createPlant(storedPlantName);
+    NetworkHandler::createPlant("Device");
   }
 
   // if email and password are present but no bearer token or no uid, get them
@@ -84,11 +84,10 @@ void setup() {
     DEBUGLN("Stored Wi-Fi credentials found. Starting Normal Mode.");
     startNormalMode();
   } else {
-    DEBUGLN(
-        "No Wi-Fi credentials found. Starting Initial Mode (Captive Portal).");
-    // Start Captive Portal for Wi-Fi configuration
-    CaptivePortal captivePortal;
-    captivePortal.begin();
+    // Start Web Provisioner for Wi-Fi credentials
+    DEBUGLN("No stored Wi-Fi credentials found. Starting Web Provisioner.");
+    WebProvisioner webProvisioner(AP_SSID);
+    webProvisioner.begin();
   }
 }
 
@@ -102,24 +101,17 @@ void startNormalMode() {
   NetworkHandler::connectToWiFi();
 
   SensorData data;
-  // if (!SensorHandler::initHDC()) {
-  //   DEBUGLN("Failed to initialize HDC3022 sensor. Exiting Normal Mode.");
-  //   data.temperature = 0.0;
-  //   data.humidity = 0.0;
-  //   data.moisture = 0.0;
-  //   data.hic = 0.0;
-  //   return;
-  // } else {
-  //   SensorHandler::readSensorData(data);
-  // }
+  if (!SensorHandler::initHDC()) {
+    DEBUGLN("Failed to initialize HDC3022 sensor. Exiting Normal Mode.");
+    data.temperature = 0.0;
+    data.humidity = 0.0;
+    data.moisture = 0.0;
+    data.hic = 0.0;
+    return;
+  } else {
+    SensorHandler::readSensorData(data);
+  }
   BatteryMonitor::getBatteryStatus(data);
-
-  data.temperature = 25.0;
-  data.humidity = 50.0;
-  data.moisture = 20.0;
-  data.hic = 25.1;
-  data.batteryVoltage = 3.9;
-  data.batteryPercentage = 95.0;
 
   NetworkHandler::sendDataToServer(data);
 

@@ -6,6 +6,7 @@
 #include <HTTPClient.h>
 #include <Preferences.h>
 #include <WiFi.h>
+#include <WiFiClientSecure.h>
 #include <esp_wifi.h>
 
 Preferences networkPreferences;
@@ -61,13 +62,14 @@ void NetworkHandler::connectToWiFi() {
 void NetworkHandler::sendDataToServer(SensorData sensorData) {
   if (WiFi.status() == WL_CONNECTED) {
     HTTPClient http;
-    WiFiClient client; // Create a WiFiClient (needed for HTTPClient on ESP32)
-
-    DEBUG("Connecting to server: ");
-    DEBUGLN(SERVER_URL);
+    WiFiClientSecure client;
+    client.setInsecure();
 
     // Begin HTTP connection
     if (http.begin(client, String(SERVER_URL) + "/weather")) {
+      DEBUG("Connecting to server: ");
+      DEBUGLN(String(SERVER_URL) + "/weather");
+
       networkPreferences.begin("stacy", true);
       String bearerToken = networkPreferences.getString("bearer_token", "");
       String uid = networkPreferences.getString("uid", "");
@@ -75,11 +77,13 @@ void NetworkHandler::sendDataToServer(SensorData sensorData) {
 
       DEBUG("Bearer Token: ");
       DEBUGLN(bearerToken);
+      DEBUG("UID: ");
+      DEBUGLN(uid);
 
       // Set headers
       http.addHeader("Content-Type", "application/json");
       http.addHeader("Authorization", "Bearer " + bearerToken);
-      http.addHeader("Device-ID", getMacAddress());
+      http.addHeader("Device-id", getMacAddress());
       http.addHeader("UID", uid);
 
       String jsonPayload =
@@ -87,7 +91,6 @@ void NetworkHandler::sendDataToServer(SensorData sensorData) {
           ",\"humidity\":" + String(sensorData.humidity) +
           ",\"moisture\":" + String(sensorData.moisture) +
           ",\"hic\":" + String(sensorData.hic) +
-          ",\"dewPoint\":" + String(sensorData.dewPoint) +
           ",\"batteryPercentage\":" + String(sensorData.batteryPercentage) +
           ",\"batteryVoltage\":" + String(sensorData.batteryVoltage) + "}";
 
@@ -141,7 +144,8 @@ bool NetworkHandler::loginUser(const String &email, const String &password) {
 
   if (WiFi.status() == WL_CONNECTED) {
     HTTPClient http;
-    WiFiClient client;
+    WiFiClientSecure client;
+    client.setInsecure();
 
     DEBUG("Logging in user: ");
     DEBUGLN(email);
@@ -171,12 +175,15 @@ bool NetworkHandler::loginUser(const String &email, const String &password) {
         DEBUGLN("Response: " + response);
         http.end();
 
-        // Parse the user ID from the response (assuming it's in JSON format)
+        // Parse the user ID from the response (assuming it's in JSON format :
+        // {"uid":"..."} )
         JsonDocument doc;
         DeserializationError error = deserializeJson(doc, response);
         if (!error) {
-          String uid = doc["uid"].as<String>();
           DEBUGLN("Parsed JSON successfully.");
+          // Show the document content
+          DEBUGLN("Document content: " + doc.as<String>());
+          String uid = doc["uid"].as<String>();
           DEBUGLN("User ID: " + uid);
 
           // Store the auth token and user ID in preferences
@@ -217,12 +224,13 @@ void NetworkHandler::createPlant(String plantName) {
 
   if (WiFi.status() == WL_CONNECTED) {
     HTTPClient http;
-    WiFiClient client;
-
-    DEBUG("Creating plant on server: ");
-    DEBUGLN(SERVER_URL);
+    WiFiClientSecure client;
+    client.setInsecure();
 
     if (http.begin(client, String(SERVER_URL) + "/plants")) {
+      DEBUG("Creating plant on server: ");
+      DEBUGLN(String(SERVER_URL) + "/plants");
+
       networkPreferences.begin("stacy", true);
       String uid = networkPreferences.getString("uid", "");
       String bearerToken = networkPreferences.getString("bearer_token", "");
@@ -237,6 +245,10 @@ void NetworkHandler::createPlant(String plantName) {
 
       DEBUG("Sending JSON payload: ");
       DEBUGLN(jsonPayload);
+      DEBUG("UID: ");
+      DEBUGLN(uid);
+      DEBUG("Bearer Token: ");
+      DEBUGLN(bearerToken);
 
       // Send POST request
       int httpResponseCode = http.POST(jsonPayload);
@@ -278,8 +290,8 @@ void NetworkHandler::createPlant(String plantName) {
           DEBUGLN("Failed to parse JSON response: " + String(error.c_str()));
         }
       } else {
-        DEBUGLN(String("HTTP POST failed, error: ") +
-                http.errorToString(httpResponseCode));
+        DEBUGLN(String("HTTP POST failed, code: ") + String(httpResponseCode) +
+                ", error: " + http.errorToString(httpResponseCode));
       }
 
       http.end();
