@@ -26,7 +26,7 @@
 #define EEPROM_SCALE_ADDR 4
 
 // Constants
-#define DELAY_LONG 3000
+#define DELAY_LONG 750
 #define DELAY_STANDARD 250
 #define DELAY_SHORT 25
 #define uS_TO_S_FACTOR 1000000ULL

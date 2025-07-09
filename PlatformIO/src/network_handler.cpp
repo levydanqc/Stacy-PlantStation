@@ -247,7 +247,7 @@ void NetworkHandler::createPlant(String plantName) {
 
       String jsonPayload = "{\"plant_name\":\"" + plantName + "\"}";
 
-      delay(DELAY_STANDARD);
+      delay(DELAY_LONG);
       DEBUG("Sending JSON payload: ");
       DEBUGLN(jsonPayload);
       DEBUG("UID: ");
