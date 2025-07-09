@@ -83,6 +83,62 @@ const authRoutes = (app) => {
         .json({ error: error.message || 'Internal server error' });
     }
   });
+
+  app.post('/refresh', (req, res) => {
+    const authHeader = req.headers['authorization'];
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.warn('Unauthorized: No Authorization header provided');
+      return res
+        .status(401)
+        .json({ error: 'Unauthorized: No Authorization header provided' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    if (!token) {
+      console.warn('Unauthorized: Token missing');
+      return res.status(401).json({ error: 'Token missing' });
+    }
+
+    const uid = req.headers['uid'];
+    if (!uid || uid.length === 0) {
+      console.warn('Unauthorized: No User-ID provided');
+      return res
+        .status(401)
+        .json({ error: 'Unauthorized: No User-ID provided' });
+    }
+
+    database
+      .getPlantByDeviceID(req.headers['device-id'])
+      .then((plant) => {
+        if (!plant) {
+          console.error(
+            'Plant not found for device ID:',
+            req.headers['device-id']
+          );
+          return res.status(404).json({ error: 'Plant not found' });
+        }
+
+        jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+          if (err) {
+            console.error('Token verification failed:', err);
+            return res.status(403).json({ error: 'Token invalid or expired' });
+          }
+
+          console.log('Token verified successfully:', decoded);
+          const newToken = jwt.sign({ uid }, process.env.JWT_SECRET, {
+            expiresIn: process.env.JWT_EXPIRES_IN,
+          });
+
+          console.log(`New JWT token generated for user ${uid}: ${newToken}`);
+          res.setHeader('auth_token', newToken);
+          return res.status(200).json({ uid: uid });
+        });
+      })
+      .catch((error) => {
+        console.error('Error retrieving plant by device ID:', error);
+        return res.status(500).json({ error: 'Internal server error' });
+      });
+  });
 };
 
 module.exports = authRoutes;
