@@ -9,6 +9,7 @@ class NetworkHandler {
 private:
   Preferences initialModePreferences;
   static String getMacAddress();
+  static bool refreshToken();
 
 public:
   static void connectToWiFi();
