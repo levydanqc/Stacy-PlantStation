@@ -105,14 +105,15 @@ void NetworkHandler::sendDataToServer(SensorData sensorData) {
         DEBUGLN(String("HTTP POST response code: ") + String(httpResponseCode));
         if (httpResponseCode == HTTP_CODE_FORBIDDEN) {
           DEBUGLN("Expired or invalid token.");
-          networkPreferences.begin("stacy", true);
-          String email = networkPreferences.getString("email");
-          String password = networkPreferences.getString("user_password");
-          networkPreferences.end();
+          // TODO : FIX
+          // networkPreferences.begin("stacy", true);
+          // String email = networkPreferences.getString("email");
+          // String password = networkPreferences.getString("user_password");
+          // networkPreferences.end();
 
-          NetworkHandler::loginUser(email, password);
-          DEBUGLN("Re-attempting to send data after re-login.");
-          NetworkHandler::sendDataToServer(sensorData);
+          // NetworkHandler::loginUser(email, password);
+          // DEBUGLN("Re-attempting to send data after re-login.");
+          // NetworkHandler::sendDataToServer(sensorData);
         }
       } else {
         DEBUGLN(String("HTTP POST failed, error: ") +
@@ -217,6 +218,8 @@ bool NetworkHandler::loginUser(const String &email, const String &password) {
 }
 
 void NetworkHandler::createPlant(String plantName) {
+  delay(DELAY_STANDARD);
+
   if (WiFi.status() != WL_CONNECTED) {
     NetworkHandler::connectToWiFi();
     delay(DELAY_STANDARD);
@@ -243,6 +246,7 @@ void NetworkHandler::createPlant(String plantName) {
 
       String jsonPayload = "{\"plant_name\":\"" + plantName + "\"}";
 
+      delay(DELAY_STANDARD);
       DEBUG("Sending JSON payload: ");
       DEBUGLN(jsonPayload);
       DEBUG("UID: ");
@@ -254,15 +258,16 @@ void NetworkHandler::createPlant(String plantName) {
       int httpResponseCode = http.POST(jsonPayload);
 
       if (httpResponseCode == HTTP_CODE_FORBIDDEN) {
-        DEBUGLN("Expired or invalid token.");
-        networkPreferences.begin("stacy", true);
-        String email = networkPreferences.getString("email");
-        String password = networkPreferences.getString("user_password");
-        networkPreferences.end();
+        // TODO : FIX
+        // DEBUGLN("Expired or invalid token.");
+        // networkPreferences.begin("stacy", true);
+        // String email = networkPreferences.getString("email");
+        // String password = networkPreferences.getString("user_password");
+        // networkPreferences.end();
 
-        NetworkHandler::loginUser(email, password);
-        DEBUGLN("Re-attempting to send data after re-login.");
-        NetworkHandler::createPlant(plantName);
+        // NetworkHandler::loginUser(email, password);
+        // DEBUGLN("Re-attempting to send data after re-login.");
+        // NetworkHandler::createPlant(plantName);
       } else if (httpResponseCode == HTTP_CODE_CREATED) {
         DEBUGLN(String("HTTP POST response code: ") + String(httpResponseCode));
 
@@ -293,7 +298,6 @@ void NetworkHandler::createPlant(String plantName) {
         DEBUGLN(String("HTTP POST failed, code: ") + String(httpResponseCode) +
                 ", error: " + http.errorToString(httpResponseCode));
       }
-
       http.end();
     } else {
       DEBUGLN("HTTP connection failed. Unable to begin.");

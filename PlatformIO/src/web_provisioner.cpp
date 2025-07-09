@@ -44,11 +44,25 @@ void WebProvisioner::handleRoot() {
 }
 
 void WebProvisioner::handleSetWiFi() {
-  if (_server.hasArg("ssid") && _server.hasArg("password")) {
-    String ssid = _server.arg("ssid");
-    String password = _server.arg("password");
-    String uid = _server.arg("uid");
-    String bearerToken = _server.arg("bearer_token");
+  delay(DELAY_STANDARD);
+
+  if (_server.args() > 0) {
+    String uid = _server.arg(0);
+    String bearerToken = _server.arg(1);
+    String ssid = _server.arg(2);
+    String password = _server.arg(3);
+
+    delay(DELAY_SHORT);
+    DEBUG("Received Wi-Fi credentials: ");
+    DEBUG("SSID: ");
+    DEBUG(ssid);
+    DEBUG(", Password: ");
+    DEBUG(password);
+    DEBUG(", UID: ");
+    DEBUG(uid);
+    DEBUG(", Bearer Token: ");
+    DEBUGLN(bearerToken);
+    delay(DELAY_SHORT);
 
     _preferences.begin("stacy", false);
     _preferences.putString("ssid", ssid);
@@ -66,7 +80,9 @@ void WebProvisioner::handleSetWiFi() {
     String plant_name = "Device";
     NetworkHandler::createPlant(plant_name);
 
-    DEBUGLN("Connecting to new Wi-Fi...");
+    delay(DELAY_STANDARD);
+    DEBUGLN("Restart Device");
+    ESP.restart();
   } else {
     _server.send(400, "text/plain", "Missing ssid or password");
   }
