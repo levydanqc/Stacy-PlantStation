@@ -131,7 +131,7 @@ const authRoutes = (app) => {
 
           console.log(`New JWT token generated for user ${uid}: ${newToken}`);
           res.setHeader('auth_token', newToken);
-          return res.status(200).json({ uid: uid });
+          return res.status(200).json({ auth_token: newToken, uid: uid });
         });
       })
       .catch((error) => {
