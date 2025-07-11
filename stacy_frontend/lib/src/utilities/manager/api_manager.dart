@@ -12,24 +12,43 @@ import 'package:stacy_frontend/src/utilities/manager/storage_manager.dart';
 class ApiManager {
   static String baseUrl = dotenv.env['API_URL']!;
 
-  static Future<Map<String, String>> getHeaders() async {
-    final String uid = await StorageManager().getString('uid') ?? '';
-    final String? bearerToken = await SecureStorageManager().getBearerToken();
+  static Future<String> getUid() async {
+    final String? uid = await StorageManager().getString('uid');
+    if (uid == null || uid.isEmpty) {
+      throw Exception('User ID not found in storage');
+    }
+    return uid;
+  }
 
+  static Future<String> getBearerToken() async {
+    final String? bearerToken = await SecureStorageManager().getBearerToken();
+    if (bearerToken == null || bearerToken.isEmpty) {
+      throw Exception('Bearer token not found in secure storage');
+    }
+    return bearerToken;
+  }
+
+  static Future<Map<String, String>> getHeaders(
+      {String contentType = 'application/json',
+      String? uid,
+      String? bearerToken}) async {
     final Map<String, String> headers = {
-      'content-type': 'application/json',
+      'content-type': contentType,
       'accept': 'application/json',
       'authorization': 'Bearer $bearerToken',
-      'uid': uid,
+      'uid': uid ?? '',
     };
 
     return headers;
   }
 
   static Future<Map<String, dynamic>> signUp(String email, String pwd) async {
+    String uid = await getUid();
+    String bearerToken = await getBearerToken();
+
     final response = await http.post(
       Uri.parse('$baseUrl/signup'),
-      headers: await getHeaders(),
+      headers: await getHeaders(uid: uid, bearerToken: bearerToken),
       body: json.encode({
         'email': email,
         'password': pwd,
@@ -67,7 +86,7 @@ class ApiManager {
       if (bearerToken == null) {
         throw Exception('Bearer token not found in response headers');
       }
-
+      log.fine('Bearer token: $bearerToken');
       await SecureStorageManager().setBearerToken(bearerToken);
       return json.decode(response.body);
     } else {
@@ -77,8 +96,10 @@ class ApiManager {
   }
 
   static Future<List<Plant>> getUserPlants() async {
-    final Map<String, String> headers = await getHeaders();
-    final String uid = headers['uid']!;
+    String uid = await getUid();
+    String bearerToken = await getBearerToken();
+    final Map<String, String> headers =
+        await getHeaders(uid: uid, bearerToken: bearerToken);
 
     final response = await http.get(Uri.parse('$baseUrl/users/$uid/plants'),
         headers: headers);
@@ -105,5 +126,44 @@ class ApiManager {
         'Failed to load user plants, status code: ${response.statusCode}');
     throw Exception(
         'Failed to load user plants, status code: ${response.statusCode}');
+  }
+
+  // sendProvisioningRequest
+  static Future<int> sendProvisioningRequest(
+      String ssid, String password) async {
+    final String deviceIP = dotenv.env['DEVICE_IP']!;
+    final String uid = await getUid();
+    final String bearerToken = await getBearerToken();
+
+    final uri = Uri.parse('http://$deviceIP/credentials');
+
+    final headers =
+        await getHeaders(contentType: 'application/x-www-form-urlencoded');
+    try {
+      final response = await http.post(uri, headers: headers, body: {
+        'ssid': ssid,
+        'password': password,
+        'uid': uid,
+        'bearer_token': bearerToken,
+      });
+
+      log.info("Sending json to $deviceIP :");
+      log.info({
+        'ssid': ssid,
+        'password': password,
+        'uid': uid,
+        'bearer_token': bearerToken,
+      });
+
+      if (response.statusCode == 200) {
+        log.info('Device provisioned successfully');
+      } else {
+        log.warning('Failed to provision device: ${response.body}');
+      }
+      return response.statusCode;
+    } catch (e) {
+      log.severe('Error sending provisioning request: $e');
+      rethrow;
+    }
   }
 }

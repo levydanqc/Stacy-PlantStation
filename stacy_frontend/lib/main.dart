@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:flutter_web_plugins/flutter_web_plugins.dart';
+// import 'package:flutter_web_plugins/flutter_web_plugins.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
+
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:stacy_frontend/src/services/logger.dart';
 
@@ -15,7 +17,7 @@ void main() async {
   usePathUrlStrategy();
 
   try {
-    await dotenv.load(fileName: ".env");
+    await dotenv.load(fileName: "assets/.env");
   } catch (e) {
     throw Exception('Error loading .env file: $e');
   }

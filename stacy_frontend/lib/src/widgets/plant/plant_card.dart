@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:stacy_frontend/src/models/plant.dart';
 import 'package:stacy_frontend/src/services/logger.dart';
 import 'package:stacy_frontend/src/utilities/constants.dart';
-import 'package:stacy_frontend/src/widgets/plant/plant_graph.dart';
 
 enum PlantGraphType { temperature, humidity, moisture }
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stacy_frontend/src/services/logger.dart';
 import 'package:stacy_frontend/src/utilities/manager/storage_manager.dart';
+import 'package:stacy_frontend/src/views/add_plant_view.dart';
 import 'package:stacy_frontend/src/views/home_view.dart';
 import 'package:stacy_frontend/src/views/welcome/loading_view.dart';
 import 'package:stacy_frontend/src/views/welcome/login_view.dart';
@@ -25,6 +26,12 @@ final GoRouter router = GoRouter(
       path: SignUpView.routeName,
       builder: (BuildContext context, GoRouterState state) {
         return const SignUpView();
+      },
+    ),
+    GoRoute(
+      path: AddPlantView.routeName,
+      builder: (BuildContext context, GoRouterState state) {
+        return const AddPlantView();
       },
     ),
     GoRoute(

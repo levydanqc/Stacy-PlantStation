@@ -4,6 +4,7 @@ import 'package:stacy_frontend/src/services/logger.dart';
 import 'package:stacy_frontend/src/utilities/constants.dart';
 import 'package:stacy_frontend/src/utilities/manager/secure_storage_manager.dart';
 import 'package:stacy_frontend/src/utilities/manager/storage_manager.dart';
+import 'package:stacy_frontend/src/views/add_plant_view.dart';
 import 'package:stacy_frontend/src/views/welcome/loading_view.dart';
 
 void buildSettingsMenu(context) {
@@ -51,8 +52,9 @@ void buildSettingsMenu(context) {
               onTap: () {
                 log.info('Add a new plant menu item tapped');
                 Navigator.pop(context);
+                GoRouter.of(context).push(AddPlantView.routeName);
               },
-              tileColor: primaryColor,
+              tileColor: accentColor,
               textColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),

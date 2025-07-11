@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:stacy_frontend/src/services/logger.dart';
+import 'package:stacy_frontend/src/views/add_plant_view.dart';
 
 Widget buildNoPlantsView(BuildContext context) {
   return Padding(
@@ -33,9 +35,8 @@ Widget buildNoPlantsView(BuildContext context) {
           height: 55,
           child: ElevatedButton.icon(
             onPressed: () {
-              // TODO: Navigate to 'Add Device' or 'Add Plant' screen
-              log.info('Add Device button pressed');
-              // GoRouter.of(context).push('/add_device');
+              log.info('Add Plant button pressed');
+              GoRouter.of(context).push(AddPlantView.routeName);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.teal.shade600,

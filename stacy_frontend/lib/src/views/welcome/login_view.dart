@@ -25,7 +25,7 @@ class _LoginViewState extends State<LoginView> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-  final bool _isPasswordVisible = false;
+  bool _isPasswordVisible = false;
 
   @override
   void dispose() {
@@ -111,10 +111,14 @@ class _LoginViewState extends State<LoginView> {
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 150.0, vertical: 10.0),
+        padding: EdgeInsets.symmetric(
+            horizontal: screenSize.width * 0.1,
+            vertical: screenSize.height * 0.05),
         child: Form(
           key: _formKey,
           child: Column(
@@ -171,6 +175,21 @@ class _LoginViewState extends State<LoginView> {
                 controller: _passwordController,
                 keyboardType: TextInputType.visiblePassword,
                 prefixIcon: Icon(Icons.lock, color: primaryColor),
+                suffixIcon: ExcludeFocus(
+                  child: IconButton(
+                    icon: Icon(
+                      _isPasswordVisible
+                          ? Icons.visibility
+                          : Icons.visibility_off,
+                      color: Colors.grey,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _isPasswordVisible = !_isPasswordVisible;
+                      });
+                    },
+                  ),
+                ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please enter your password';
@@ -232,7 +251,7 @@ class _LoginViewState extends State<LoginView> {
                   ),
                 ),
               ),
-              const SizedBox(height: 30), // Space before separator
+              const SizedBox(height: 15), // Space before separator
 
               // Or Separator
               Row(
@@ -248,7 +267,7 @@ class _LoginViewState extends State<LoginView> {
                   Expanded(child: Divider(color: Colors.grey.shade400)),
                 ],
               ),
-              const SizedBox(height: 30), // Space after separator
+              const SizedBox(height: 15), // Space after separator
 
               // Social Login Buttons
               Row(
@@ -274,7 +293,7 @@ class _LoginViewState extends State<LoginView> {
                   ),
                 ],
               ),
-              const SizedBox(height: 30),
+              const SizedBox(height: 15),
 
               Container(
                 alignment: Alignment.center,

@@ -116,12 +116,15 @@ class _SignUpViewState extends State<SignUpView> {
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: Center(
         child: SingleChildScrollView(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 150.0, vertical: 10.0),
+          padding: EdgeInsets.symmetric(
+              horizontal: screenSize.width * 0.1,
+              vertical: screenSize.height * 0.05),
           child: Form(
             key: _formKey,
             child: Column(
@@ -151,7 +154,7 @@ class _SignUpViewState extends State<SignUpView> {
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 40),
+                const SizedBox(height: 15),
                 HomeInputField(
                   label: 'Email',
                   hint: 'Enter your email',
@@ -240,7 +243,7 @@ class _SignUpViewState extends State<SignUpView> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 30),
+                const SizedBox(height: 15),
                 Row(
                   children: [
                     Expanded(child: Divider(color: Colors.grey.shade400)),
@@ -254,7 +257,7 @@ class _SignUpViewState extends State<SignUpView> {
                     Expanded(child: Divider(color: Colors.grey.shade400)),
                   ],
                 ),
-                const SizedBox(height: 30),
+                const SizedBox(height: 15),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
@@ -278,7 +281,7 @@ class _SignUpViewState extends State<SignUpView> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 30),
+                const SizedBox(height: 15),
                 Container(
                   alignment: Alignment.center,
                   child: TextButton(

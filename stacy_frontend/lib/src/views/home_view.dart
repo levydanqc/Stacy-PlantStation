@@ -123,10 +123,8 @@ class _HomeViewState extends State<HomeView> {
   @override
   Widget build(BuildContext context) {
     log.fine('Building HomeView with params: id: ${widget.id}');
-    return SafeArea(
-      child: Builder(
-        builder: _buildView,
-      ),
+    return Builder(
+      builder: _buildView,
     );
   }
 

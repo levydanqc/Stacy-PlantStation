@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:stacy_frontend/src/models/plant.dart';
 import 'package:stacy_frontend/src/services/logger.dart';
 import 'package:stacy_frontend/src/utilities/constants.dart';
+import 'package:stacy_frontend/src/views/add_plant_view.dart';
 import 'package:stacy_frontend/src/widgets/home/build_settings_menu.dart';
 
 Widget buildPlantOverviewView(
@@ -9,6 +11,8 @@ Widget buildPlantOverviewView(
   List<Plant> plants,
 ) {
   log.info('Building Plant Overview View');
+  final screenSize = MediaQuery.of(context).size;
+
   return Scaffold(
     backgroundColor: offWhite,
     appBar: AppBar(
@@ -22,7 +26,10 @@ Widget buildPlantOverviewView(
       actions: [
         // Text button icon to add a new plant
         TextButton.icon(
-          onPressed: () {},
+          onPressed: () {
+            log.info('Add Plant button pressed');
+            GoRouter.of(context).go(AddPlantView.routeName);
+          },
           label: Text(
             'Add Plant',
             style: TextStyle(color: Colors.white, fontSize: 16),
@@ -50,7 +57,9 @@ Widget buildPlantOverviewView(
       ],
     ),
     body: Container(
-      margin: const EdgeInsets.fromLTRB(30.0, 50.0, 30.0, 0.0),
+      margin: EdgeInsets.symmetric(
+          horizontal: screenSize.width * 0.05,
+          vertical: screenSize.height * 0.05),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.start,
@@ -66,8 +75,7 @@ Widget buildPlantOverviewView(
           SizedBox(height: 30),
           Expanded(
             child: ListView.builder(
-              padding: const EdgeInsets.only(right: 100),
-              itemCount: 5,
+              itemCount: plants.length,
               itemBuilder: (context, index) {
                 return Card(
                   color: offWhite,
@@ -115,18 +123,48 @@ Widget buildPlantOverviewView(
                             children: [
                               Row(
                                 children: [
-                                  Text('Plant ${index + 1}',
+                                  Text(plants[index].plantName,
                                       style: TextStyle(
                                           color: blackColor,
                                           fontWeight: FontWeight.bold,
                                           fontSize: 22)),
-                                  const SizedBox(width: 4),
-                                  Icon(
-                                    false
-                                        ? Icons.warning_amber
-                                        : Icons.verified,
-                                    size: 16,
-                                    color: true ? Colors.red : Colors.grey,
+                                  const SizedBox(width: 20),
+                                  Builder(
+                                    builder: (context) {
+                                      if (plants[index].plantData.isNotEmpty) {
+                                        final isActive = plants[index]
+                                            .plantData
+                                            .last
+                                            .timestamp
+                                            .isAfter(DateTime.now()
+                                                .subtract(Duration(hours: 2)));
+                                        return Row(
+                                          children: [
+                                            Icon(
+                                              Icons.circle,
+                                              size: 16,
+                                              color: isActive
+                                                  ? Colors.green
+                                                  : Colors.red,
+                                              semanticLabel: isActive
+                                                  ? 'Active'
+                                                  : 'Inactive',
+                                            ),
+                                            const SizedBox(width: 5),
+                                            Text(
+                                              isActive ? 'Online' : 'Offline',
+                                              style: TextStyle(
+                                                color: isActive
+                                                    ? Colors.green
+                                                    : Colors.red,
+                                                fontSize: 16,
+                                              ),
+                                            ),
+                                          ],
+                                        );
+                                      }
+                                      return Text("");
+                                    },
                                   ),
                                 ],
                               ),

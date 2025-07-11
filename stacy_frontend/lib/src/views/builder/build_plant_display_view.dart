@@ -1,13 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
 import 'package:stacy_frontend/src/models/plant.dart';
 import 'package:stacy_frontend/src/services/logger.dart';
 import 'package:stacy_frontend/src/utilities/constants.dart';
-import 'package:stacy_frontend/src/utilities/manager/secure_storage_manager.dart';
-import 'package:stacy_frontend/src/utilities/manager/storage_manager.dart';
-import 'package:stacy_frontend/src/views/welcome/loading_view.dart';
 import 'package:stacy_frontend/src/widgets/home/build_plant_selector_menu.dart';
 import 'package:stacy_frontend/src/widgets/home/build_settings_menu.dart';
 import 'package:stacy_frontend/src/widgets/plant/plant_card.dart';
