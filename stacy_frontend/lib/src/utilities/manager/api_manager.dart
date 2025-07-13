@@ -128,9 +128,8 @@ class ApiManager {
         'Failed to load user plants, status code: ${response.statusCode}');
   }
 
-  // sendProvisioningRequest
-  static Future<int> sendProvisioningRequest(
-      String ssid, String password) async {
+  static Future<int> sendProvisioningRequest() async {
+    log.finest('Sending provisioning request to device');
     final String deviceIP = dotenv.env['DEVICE_IP']!;
     final String uid = await getUid();
     final String bearerToken = await getBearerToken();
@@ -141,16 +140,12 @@ class ApiManager {
         await getHeaders(contentType: 'application/x-www-form-urlencoded');
     try {
       final response = await http.post(uri, headers: headers, body: {
-        'ssid': ssid,
-        'password': password,
         'uid': uid,
         'bearer_token': bearerToken,
       });
 
       log.info("Sending json to $deviceIP :");
       log.info({
-        'ssid': ssid,
-        'password': password,
         'uid': uid,
         'bearer_token': bearerToken,
       });
