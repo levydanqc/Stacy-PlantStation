@@ -1,5 +1,3 @@
-#define DEBUG_MODE 1
-
 #include "configuration.h"
 #include "credentials.h"
 #include "debug.h"
@@ -9,9 +7,9 @@
 Preferences preferences;
 
 #include <battery_monitor.h>
+#include <captive_portal.h>
 #include <network_handler.h>
 #include <sensor_handler.h>
-#include <web_provisioner.h>
 
 // --- Function Prototypes ---
 void powerOff();
@@ -33,60 +31,38 @@ void setup() {
   String storedWifiPWD = preferences.getString("wifi_password");
   String storedUID = preferences.getString("uid");
   String storedBearerToken = preferences.getString("bearer_token");
-  // String storedEmail = preferences.getString("email");
-  // String storedPwd = preferences.getString("user_password");
   String storedPlantName = preferences.getString("plant_name");
   String storedPlantId = preferences.getString("plant_id");
+  preferences.end();
 
   DEBUGLN("Stored Wi-Fi SSID: " + storedSSID);
   DEBUGLN("Stored Wi-Fi Password: " + storedWifiPWD);
   DEBUGLN("Stored UID: " + storedUID);
   DEBUGLN("Stored Bearer Token: " + storedBearerToken);
-  // DEBUGLN("Stored Email: " + storedEmail);
-  // DEBUGLN("Stored Password: " + storedPwd);
   DEBUGLN("Stored Plant Name: " + storedPlantName);
   DEBUGLN("Stored Plant ID: " + storedPlantId);
-
-  // if no UID is stored but email and password are present
-  // if (storedUID.length() < 1 && storedEmail.length() > 1 &&
-  //     storedPwd.length() > 1) {
-  //   DEBUGLN("No UID found but email and password are present. Attempting to "
-  //           "login and create UID.");
-  //   storedUID = NetworkHandler::loginUser(storedEmail, storedPwd);
-  //   if (!storedUID.isEmpty()) {
-  //     DEBUGLN("UID created successfully: " + storedUID);
-  //     preferences.putString("uid", storedUID);
-  //   } else {
-  //     DEBUGLN("Failed to create UID. Please check your credentials.");
-  //   }
-  // }
 
   // if uid is stored but no plant_id, create one
   if (storedUID.length() > 1 && storedPlantId.length() < 1) {
     DEBUGLN("No Plant ID found but UID and Plant Name are present. Attempting "
             "to create Plant ID.");
-    NetworkHandler::createPlant("Device");
+    NetworkHandler::createPlant(storedPlantName);
   }
 
-  // if email and password are present but no bearer token or no uid, get them
-  // if (storedEmail.length() > 1 && storedPwd.length() > 1 &&
-  //     (storedBearerToken.length() < 1 || storedUID.length() < 1)) {
-  //   DEBUGLN("No Bearer Token found but UID is present. Attempting to create "
-  //           "Bearer Token.");
-  //   NetworkHandler::loginUser(storedEmail, storedPwd);
-  // }
-
-  preferences.end();
-
   if (storedSSID.length() > 1 && storedWifiPWD.length() > 1 &&
-      storedUID.length() > 1) {
+      storedUID.length() > 1 && storedBearerToken.length() > 1) {
     DEBUGLN("Stored Wi-Fi credentials found. Starting Normal Mode.");
     startNormalMode();
+  } else if (storedSSID.length() > 1 && storedWifiPWD.length() > 1 &&
+             storedUID.length() < 1) {
+    DEBUGLN("No UID found but Wi-Fi credentials are present. Starting "
+            "mDNS.");
+    CaptivePortal captivePortal;
+    captivePortal.startMDNS();
   } else {
-    // Start Web Provisioner for Wi-Fi credentials
-    DEBUGLN("No stored Wi-Fi credentials found. Starting Web Provisioner.");
-    WebProvisioner webProvisioner(AP_SSID);
-    webProvisioner.begin();
+    DEBUGLN("No stored Wi-Fi credentials found. Starting Captive Portal.");
+    CaptivePortal captivePortal;
+    captivePortal.begin();
   }
 }
 
@@ -110,9 +86,9 @@ void startNormalMode() {
   } else {
     SensorHandler::readSensorData(data);
   }
-  // BatteryMonitor::getBatteryStatus(data);
-  data.batteryPercentage = 1.0;
-  data.batteryVoltage = 1.0;
+  BatteryMonitor::getBatteryStatus(data);
+  // data.batteryPercentage = 1.0;
+  // data.batteryVoltage = 1.0;
 
   NetworkHandler::sendDataToServer(data);
 

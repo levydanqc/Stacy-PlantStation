@@ -21,21 +21,12 @@ void NetworkHandler::connectToWiFi() {
   String password = networkPreferences.getString("wifi_password");
   networkPreferences.end();
 
-  // check if already connected
-  if (WiFi.status() == WL_CONNECTED) {
-    DEBUGLN("Already connected to WiFi.");
-    DEBUG("IP Address: ");
-    DEBUGLN(WiFi.localIP());
-    return;
-  }
-
   DEBUG("Connecting to WiFi: ");
   DEBUGLN(ssid);
   WiFi.begin(ssid, password);
 
   unsigned long startTime = millis();
   while (WiFi.status() != WL_CONNECTED) {
-    delay(DELAY_STANDARD);
     // Timeout after 5 seconds
     if (millis() - startTime > 5000) {
       DEBUGLN("\nWiFi Connection Timeout!");
@@ -61,73 +52,73 @@ void NetworkHandler::connectToWiFi() {
  * @param humidity The humidity value.
  */
 void NetworkHandler::sendDataToServer(SensorData sensorData) {
-  if (WiFi.status() == WL_CONNECTED) {
-    HTTPClient http;
-    WiFiClientSecure client;
-    client.setInsecure();
+  if (WiFi.status() != WL_CONNECTED) {
+    DEBUGLN("WiFi not connected. Attempting to connect...");
+    NetworkHandler::connectToWiFi();
+    delay(DELAY_STANDARD);
+  }
 
-    // Begin HTTP connection
-    if (http.begin(client, String(SERVER_URL) + "/weather")) {
-      DEBUG("Connecting to server: ");
-      DEBUGLN(String(SERVER_URL) + "/weather");
+  HTTPClient http;
+  WiFiClientSecure client;
+  client.setInsecure();
 
-      networkPreferences.begin("stacy", true);
-      String bearerToken = networkPreferences.getString("bearer_token", "");
-      String uid = networkPreferences.getString("uid", "");
-      networkPreferences.end();
+  // Begin HTTP connection
+  if (http.begin(client, String(SERVER_URL) + "/weather")) {
+    DEBUG("Connecting to server: ");
+    DEBUGLN(String(SERVER_URL) + "/weather");
 
-      DEBUG("Bearer Token: ");
-      DEBUGLN(bearerToken);
-      DEBUG("UID: ");
-      DEBUGLN(uid);
+    networkPreferences.begin("stacy", true);
+    String bearerToken = networkPreferences.getString("bearer_token", "");
+    String uid = networkPreferences.getString("uid", "");
+    networkPreferences.end();
 
-      // Set headers
-      http.addHeader("Content-Type", "application/json");
-      http.addHeader("Authorization", "Bearer " + bearerToken);
-      http.addHeader("Device-id", getMacAddress());
-      http.addHeader("UID", uid);
+    DEBUG("Bearer Token: ");
+    DEBUGLN(bearerToken);
+    DEBUG("UID: ");
+    DEBUGLN(uid);
 
-      String jsonPayload =
-          "{\"temperature\":" + String(sensorData.temperature) +
-          ",\"humidity\":" + String(sensorData.humidity) +
-          ",\"moisture\":" + String(sensorData.moisture) +
-          ",\"hic\":" + String(sensorData.hic) +
-          ",\"batteryPercentage\":" + String(sensorData.batteryPercentage) +
-          ",\"batteryVoltage\":" + String(sensorData.batteryVoltage) + "}";
+    // Set headers
+    http.addHeader("Content-Type", "application/json");
+    http.addHeader("Authorization", "Bearer " + bearerToken);
+    http.addHeader("Device-id", getMacAddress());
+    http.addHeader("UID", uid);
 
-      DEBUG("Sending JSON payload: ");
-      DEBUGLN(jsonPayload);
+    String jsonPayload =
+        "{\"temperature\":" + String(sensorData.temperature) +
+        ",\"humidity\":" + String(sensorData.humidity) +
+        ",\"moisture\":" + String(sensorData.moisture) +
+        ",\"hic\":" + String(sensorData.hic) +
+        ",\"batteryPercentage\":" + String(sensorData.batteryPercentage) +
+        ",\"batteryVoltage\":" + String(sensorData.batteryVoltage) + "}";
 
-      // Send POST request
-      int httpResponseCode = http.POST(jsonPayload);
+    DEBUG("Sending JSON payload: ");
+    DEBUGLN(jsonPayload);
 
-      // Check response
-      if (httpResponseCode > 0) {
-        DEBUGLN(String("HTTP POST response code: ") + String(httpResponseCode));
-        if (httpResponseCode == HTTP_CODE_FORBIDDEN) {
-          DEBUGLN("Expired or invalid token.");
-          // TODO : FIX
-          // networkPreferences.begin("stacy", true);
-          // String email = networkPreferences.getString("email");
-          // String password = networkPreferences.getString("user_password");
-          // networkPreferences.end();
+    // Send POST request
+    int httpResponseCode = http.POST(jsonPayload);
 
-          // NetworkHandler::loginUser(email, password);
-          // DEBUGLN("Re-attempting to send data after re-login.");
-          // NetworkHandler::sendDataToServer(sensorData);
+    // Check response
+    if (httpResponseCode > 0) {
+      DEBUGLN(String("HTTP POST response code: ") + String(httpResponseCode));
+      if (httpResponseCode == HTTP_CODE_FORBIDDEN) {
+        DEBUGLN("Expired or invalid token. Refreshing token...");
+        bool worked = NetworkHandler::refreshToken();
+
+        if (!worked) {
+          DEBUGLN("Failed to refresh token. Cannot send data.");
+          return;
         }
-      } else {
-        DEBUGLN(String("HTTP POST failed, error: ") +
-                http.errorToString(httpResponseCode));
+        DEBUGLN("Re-attempting to send data after token refresh.");
+        NetworkHandler::sendDataToServer(sensorData);
       }
-
-      // End HTTP connection
-      http.end();
     } else {
-      DEBUGLN("HTTP connection failed. Unable to begin.");
+      DEBUGLN(String("HTTP POST failed, error: ") +
+              http.errorToString(httpResponseCode));
     }
+    // End HTTP connection
+    http.end();
   } else {
-    DEBUGLN("WiFi not connected. Cannot send data.");
+    DEBUGLN("HTTP connection failed. Unable to begin.");
   }
 }
 
@@ -219,8 +210,6 @@ bool NetworkHandler::loginUser(const String &email, const String &password) {
 }
 
 void NetworkHandler::createPlant(String plantName) {
-  delay(DELAY_STANDARD);
-
   if (WiFi.status() != WL_CONNECTED) {
     NetworkHandler::connectToWiFi();
     delay(DELAY_STANDARD);
@@ -247,7 +236,6 @@ void NetworkHandler::createPlant(String plantName) {
 
       String jsonPayload = "{\"plant_name\":\"" + plantName + "\"}";
 
-      delay(DELAY_LONG);
       DEBUG("Sending JSON payload: ");
       DEBUGLN(jsonPayload);
       DEBUG("UID: ");
@@ -314,11 +302,11 @@ void NetworkHandler::createPlant(String plantName) {
  * @return True if the token was refreshed successfully, false otherwise.
  */
 bool NetworkHandler::refreshToken() {
-  delay(DELAY_STANDARD);
   if (WiFi.status() != WL_CONNECTED) {
     NetworkHandler::connectToWiFi();
     delay(DELAY_STANDARD);
   }
+
   if (WiFi.status() == WL_CONNECTED) {
     HTTPClient http;
     WiFiClientSecure client;
@@ -336,9 +324,6 @@ bool NetworkHandler::refreshToken() {
       http.addHeader("Authorization", "Bearer " + bearerToken);
       http.addHeader("Device-ID", getMacAddress());
       http.addHeader("UID", uid);
-
-      DEBUG("Sending JSON payload: ");
-      DEBUGLN(jsonPayload);
 
       int httpResponseCode = http.POST("{}");
 

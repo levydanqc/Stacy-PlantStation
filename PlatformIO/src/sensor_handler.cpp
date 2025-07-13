@@ -15,7 +15,6 @@ bool SensorHandler::initHDC() {
     DEBUG("HDC3022 sensor initialization failed");
     return false;
   }
-  delay(DELAY_STANDARD);
   return true;
 }
 
@@ -39,10 +38,8 @@ void SensorHandler::readHDC(SensorData &sensorData) {
  */
 float SensorHandler::getMoisture() {
   uint16_t sensorValue = analogRead(CAPACITANCE_PIN);
+  float moisture = map(sensorValue, AIR_VALUE, WATER_VALUE, 0.0, 100.0);
 
-  float voltage = sensorValue * (3.3 / 4095.0);
-  // TODO : calibrate this value
-  float moisture = (voltage * 10.0) + 5.0;
   return moisture;
 }
 
