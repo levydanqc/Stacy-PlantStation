@@ -93,7 +93,7 @@ void startNormalMode() {
   NetworkHandler::sendDataToServer(data);
 
   // Signal the TPL5110 to turn off power
-  // powerOff();
+  powerOff();
 }
 
 /**

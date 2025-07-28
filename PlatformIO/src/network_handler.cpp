@@ -37,7 +37,6 @@ void NetworkHandler::connectToWiFi() {
   if (WiFi.status() != WL_CONNECTED) {
     DEBUGLN("Failed to connect to WiFi. Going back to sleep.");
     return;
-    // powerOff();
   }
 
   DEBUGLN("\nWiFi Connected!");
