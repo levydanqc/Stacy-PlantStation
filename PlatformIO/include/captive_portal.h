@@ -8,15 +8,18 @@
 class CaptivePortal {
 public:
   void begin();
+  void startMDNS();
 
 private:
   WebServer server;
   Preferences initialModePreferences;
   DNSServer dnsServer;
+  void startServer();
   void handleRoot();
   void handleNotFound();
   void handleConnect();
   void handleScan();
+  void handleCredentials();
   const char *INDEX_HTML = R"rawliteral(
 <!DOCTYPE HTML>
 <html>
@@ -191,18 +194,10 @@ private:
     <form id="setupForm">
       <div class="form-content">
         <div>
-          <label for="name">Plant name</label>
+          <label for="plant_name">Plant name</label>
           <input type="text" id="plant_name" name="plant_name" required>
         </div>
-        <div>
-          <label for="email">Email</label>
-          <input type="email" id="email" name="email" required>
-        </div>
-        <div>
-          <label for="user_password">Password</label>
-          <input type="password" id="password" name="password" required>
-        </div>
-
+        
         <div>
           <label for="ssid">Select Wi-Fi Network</label>
           <div id="loadingNetworks" class="loader-container">
@@ -268,28 +263,44 @@ private:
         statusMessage.style.display = 'none';
         loadingSpinner.classList.remove('hidden');
         
-        const formData = new FormData(form);
-        const data = Object.fromEntries(formData.entries());
+        const data = {
+          ssid: document.getElementById('ssid').value,
+          wifi_password: document.getElementById('wifi_password').value,
+          plant_name: document.getElementById('plant_name').value
+        };
 
         fetch('/connect', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data),
         })
-        .then(result => {
-          if (!result.ok) throw new Error('Connection failed');
-          loadingSpinner.classList.add('hidden');
-          statusMessage.textContent = result.message || (result.success ? 'Success!' : 'Failed.');
-          statusMessage.className = `status-message ${result.success ? 'status-success' : 'status-error'}`;
-          statusMessage.style.display = 'block';
-        })
-        .catch(error => {
-          loadingSpinner.classList.add('hidden');
-          console.error('Error during connection:', error);
-          statusMessage.textContent = 'An unexpected error occurred. Please try again.';
-          statusMessage.className = 'status-message status-error';
-          statusMessage.style.display = 'block';
-        });
+          // then close the captive portal
+          .then(response => {
+            loadingSpinner.classList.add('hidden');
+            if (!response.ok) throw new Error('Connection failed');
+            return response.json();
+          })
+          .then(result => {
+            if (result.success) {
+              statusMessage.className = 'status-message status-success';
+              statusMessage.textContent = 'Device connected successfully! Restarting...';
+              statusMessage.style.display = 'block';
+              setTimeout(() => {
+                window.location.href = '/'; // Redirect to the root to close the captive portal
+              }, 2000);
+            } else {
+              statusMessage.className = 'status-message status-error';
+              statusMessage.textContent = result.error || 'Failed to connect. Please try again.';
+              statusMessage.style.display = 'block';
+            }
+          })
+          .catch(error => {
+            loadingSpinner.classList.add('hidden');
+            console.error('Error during connection:', error);
+            statusMessage.className = 'status-message status-error';
+            statusMessage.textContent = 'Connection failed: ' + error.message;
+            statusMessage.style.display = 'block';
+          });
       });
 
       fetchWifiNetworks();

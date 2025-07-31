@@ -118,8 +118,7 @@ const authRoutes = (app) => {
           return res.status(404).json({ error: 'Plant not found' });
         }
 
-        jwt.verify(token, process.env.JWT_SECRET, (_, decoded) => {
-          console.log('Token verified successfully:', decoded);
+        jwt.verify(token, process.env.JWT_SECRET, () => {
           const newToken = jwt.sign({ uid }, process.env.JWT_SECRET, {
             expiresIn: process.env.JWT_EXPIRES_IN,
           });

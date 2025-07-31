@@ -2,8 +2,10 @@
 
 #include "configuration.h"
 #include "debug.h"
+
 #include <ArduinoJson.h>
 #include <DNSServer.h>
+#include <ESPmDNS.h>
 #include <Preferences.h>
 #include <WebServer.h>
 #include <WiFi.h>
@@ -16,34 +18,93 @@ Preferences initialModePreferences;
 void CaptivePortal::begin() {
   DEBUGLN("Starting Initial Mode (Captive Portal)");
 
+  // random 4 digit suffix for the SSID
+  String randomSuffix = String(random(1000, 9999));
+  String SSID = AP_SSID + '-' + randomSuffix;
+
   // Set up Access Point
   WiFi.mode(WIFI_AP);
-  WiFi.softAP(AP_SSID);
-  IPAddress apIP = WiFi.softAPIP();
+  WiFi.softAP(SSID);
+  IPAddress apIP(192, 168, 4, 1);
+  if (!WiFi.softAPConfig(apIP, apIP, IPAddress(255, 255, 255, 0))) {
+    DEBUGLN("Failed to configure AP");
+  }
   DEBUGLN("AP IP address: " + apIP.toString());
-
-  // Set up DNS server for captive portal
   dnsServer.start(DNS_PORT, "*", apIP);
 
+  startServer();
+}
+
+void CaptivePortal::startServer() {
   // Set up web server routes
   server.on("/", [this]() { handleRoot(); });
   server.on("/connect", HTTP_POST, [this]() { handleConnect(); });
   server.on("/scan", [this]() { handleScan(); });
+  server.on("/credentials", HTTP_POST, [this]() { handleCredentials(); });
   server.onNotFound([this]() { handleNotFound(); });
 
   server.begin();
   DEBUGLN("HTTP server started.");
 
-  // Keep the ESP32 awake and handle client requests in the loop
-  // This loop will run until the device reboots after successful config
   while (true) {
-    dnsServer.processNextRequest();
+    if (WiFi.getMode() == WIFI_AP) {
+      dnsServer.processNextRequest();
+    }
     server.handleClient();
-    delay(10); // Small delay to prevent watchdog timer issues
+    delay(10);
   }
 }
 
 void CaptivePortal::handleRoot() { server.send(200, "text/html", INDEX_HTML); }
+
+void CaptivePortal::handleCredentials() {
+  String body = server.arg("plain");
+  if (body.isEmpty()) {
+    server.send(400, "text/plain", "No credentials provided.");
+    return;
+  }
+
+  DEBUGLN("Received body: " + body);
+
+  JsonDocument doc;
+  DeserializationError error = deserializeJson(doc, body);
+
+  if (error) {
+    DEBUGLN("JSON parsing failed: " + String(error.c_str()));
+    server.send(400, "application/json",
+                R"({"success":false,"error":"Invalid JSON"})");
+    return;
+  }
+
+  String uid = doc["uid"] | "";
+  String bearer_token = doc["bearer_token"] | "";
+  String plant_name = doc["plant_name"] | "My New Plant";
+
+  if (uid.isEmpty() || bearer_token.isEmpty()) {
+    server.send(400, "application/json",
+                R"({"success":false,"error":"Missing fields"})");
+    return;
+  }
+
+  DEBUGLN("UID: " + uid);
+  DEBUGLN("Bearer Token: " + bearer_token);
+
+  initialModePreferences.begin("stacy", false);
+  initialModePreferences.putString("uid", uid);
+  initialModePreferences.putString("bearer_token", bearer_token);
+  initialModePreferences.putString("plant_name", plant_name);
+  initialModePreferences.end();
+
+  delay(DELAY_SHORT);
+  NetworkHandler::createPlant(String(plant_name));
+
+  server.send(200, "application/json",
+              R"({"success":true,"message":"Credentials saved"})");
+  delay(DELAY_SHORT);
+
+  ESP.restart();
+  return;
+}
 
 void CaptivePortal::handleConnect() {
   JsonDocument doc;
@@ -57,53 +118,71 @@ void CaptivePortal::handleConnect() {
     DEBUG("deserializeJson() failed: ");
     DEBUGLN(error.c_str());
     server.send(400, "application/json",
-                "{\"success\":false,\"message\":\"Invalid JSON\"}");
+                R"({"success":false, "error":"Invalid JSON"})");
     return;
   }
 
-  DEBUGLN("Credentials received. Attempting to connect to WiFi...");
+  DEBUGLN("Credentials received.");
   DEBUGLN("Request body: " + doc.as<String>());
 
-  const char *email = doc["email"];
-  const char *user_password = doc["password"];
   const char *ssid = doc["ssid"];
   const char *wifi_password = doc["wifi_password"];
   const char *plant_name = doc["plant_name"];
 
   DEBUGLN("SSID: " + String(ssid));
   DEBUGLN("wifi_password: " + String(wifi_password));
-  DEBUGLN("email: " + String(email));
-  DEBUGLN("user_password: " + String(user_password));
   DEBUGLN("plant_name: " + String(plant_name));
+  // DEBUGLN("email: " + String(email));
+  // DEBUGLN("user_password: " + String(user_password));
 
-  if (!plant_name || !ssid || !wifi_password || !email || !user_password) {
-    server.send(400, "text/plain", "Invalid request. Missing required fields.");
+  if (!plant_name || !ssid || !wifi_password) {
+    server.send(400, "application/json",
+                R"({"success":false, "error":"Missing fields"})");
     return;
   }
-  delay(DELAY_SHORT);
 
   initialModePreferences.begin("stacy", false);
   initialModePreferences.putString("ssid", ssid);
   initialModePreferences.putString("wifi_password", wifi_password);
-  initialModePreferences.putString("email", email);
-  initialModePreferences.putString("user_password", user_password);
   initialModePreferences.putString("plant_name", plant_name);
   initialModePreferences.end();
 
-  NetworkHandler::connectToWiFi();
+  server.send(200, "application/json", R"({"success":true})");
+
   delay(DELAY_STANDARD);
 
-  bool loggedIn = NetworkHandler::loginUser(email, user_password);
-  if (!loggedIn) {
-    NetworkHandler::createPlant(String(plant_name));
-  }
+  // Stop captive portal services
+  dnsServer.stop();
+  server.stop();
+  WiFi.softAPdisconnect(true);
+  WiFi.mode(WIFI_STA);
+  DEBUGLN("Captive portal stopped.");
 
-  server.send(200, "text/plain",
-              "Attempting to connect to WiFi. The device will restart soon.");
+  CaptivePortal::startMDNS();
+  return;
+}
 
+void CaptivePortal::startMDNS() {
+  NetworkHandler::connectToWiFi();
   delay(DELAY_SHORT);
 
-  ESP.restart();
+  if (WiFi.status() != WL_CONNECTED) {
+    DEBUGLN("Failed to connect to WiFi. Cannot start mDNS.");
+    initialModePreferences.begin("stacy", false);
+    initialModePreferences.remove("ssid");
+    initialModePreferences.remove("wifi_password");
+    initialModePreferences.end();
+    return;
+  }
+
+  if (!MDNS.begin("plantstation")) {
+    DEBUGLN("Error setting up mDNS responder!");
+    return;
+  }
+  DEBUGLN("mDNS responder started: http://plantstation.local");
+  MDNS.addService("http", "tcp", 80);
+
+  startServer();
 }
 
 void CaptivePortal::handleScan() {

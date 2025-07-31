@@ -6,6 +6,7 @@
 #include <HTTPClient.h>
 #include <Preferences.h>
 #include <WiFi.h>
+#include <WiFiClientSecure.h>
 #include <esp_wifi.h>
 
 Preferences networkPreferences;
@@ -20,21 +21,12 @@ void NetworkHandler::connectToWiFi() {
   String password = networkPreferences.getString("wifi_password");
   networkPreferences.end();
 
-  // check if already connected
-  if (WiFi.status() == WL_CONNECTED) {
-    DEBUGLN("Already connected to WiFi.");
-    DEBUG("IP Address: ");
-    DEBUGLN(WiFi.localIP());
-    return;
-  }
-
   DEBUG("Connecting to WiFi: ");
   DEBUGLN(ssid);
   WiFi.begin(ssid, password);
 
   unsigned long startTime = millis();
   while (WiFi.status() != WL_CONNECTED) {
-    delay(DELAY_STANDARD);
     // Timeout after 5 seconds
     if (millis() - startTime > 5000) {
       DEBUGLN("\nWiFi Connection Timeout!");
@@ -45,13 +37,13 @@ void NetworkHandler::connectToWiFi() {
   if (WiFi.status() != WL_CONNECTED) {
     DEBUGLN("Failed to connect to WiFi. Going back to sleep.");
     return;
-    // powerOff();
   }
 
   DEBUGLN("\nWiFi Connected!");
   DEBUG("IP Address: ");
   DEBUGLN(WiFi.localIP());
 }
+
 /**
  * @brief Sends the provided temperature and humidity data to the server via
  * HTTP POST.
@@ -59,70 +51,73 @@ void NetworkHandler::connectToWiFi() {
  * @param humidity The humidity value.
  */
 void NetworkHandler::sendDataToServer(SensorData sensorData) {
-  if (WiFi.status() == WL_CONNECTED) {
-    HTTPClient http;
-    WiFiClient client; // Create a WiFiClient (needed for HTTPClient on ESP32)
+  if (WiFi.status() != WL_CONNECTED) {
+    DEBUGLN("WiFi not connected. Attempting to connect...");
+    NetworkHandler::connectToWiFi();
+    delay(DELAY_STANDARD);
+  }
 
+  HTTPClient http;
+  WiFiClientSecure client;
+  client.setInsecure();
+
+  // Begin HTTP connection
+  if (http.begin(client, String(SERVER_URL) + "/weather")) {
     DEBUG("Connecting to server: ");
-    DEBUGLN(SERVER_URL);
+    DEBUGLN(String(SERVER_URL) + "/weather");
 
-    // Begin HTTP connection
-    if (http.begin(client, String(SERVER_URL) + "/weather")) {
-      networkPreferences.begin("stacy", true);
-      String bearerToken = networkPreferences.getString("bearer_token", "");
-      String uid = networkPreferences.getString("uid", "");
-      networkPreferences.end();
+    networkPreferences.begin("stacy", true);
+    String bearerToken = networkPreferences.getString("bearer_token", "");
+    String uid = networkPreferences.getString("uid", "");
+    networkPreferences.end();
 
-      DEBUG("Bearer Token: ");
-      DEBUGLN(bearerToken);
+    DEBUG("Bearer Token: ");
+    DEBUGLN(bearerToken);
+    DEBUG("UID: ");
+    DEBUGLN(uid);
 
-      // Set headers
-      http.addHeader("Content-Type", "application/json");
-      http.addHeader("Authorization", "Bearer " + bearerToken);
-      http.addHeader("Device-ID", getMacAddress());
-      http.addHeader("UID", uid);
+    // Set headers
+    http.addHeader("Content-Type", "application/json");
+    http.addHeader("Authorization", "Bearer " + bearerToken);
+    http.addHeader("Device-id", getMacAddress());
+    http.addHeader("UID", uid);
 
-      String jsonPayload =
-          "{\"temperature\":" + String(sensorData.temperature) +
-          ",\"humidity\":" + String(sensorData.humidity) +
-          ",\"moisture\":" + String(sensorData.moisture) +
-          ",\"hic\":" + String(sensorData.hic) +
-          ",\"dewPoint\":" + String(sensorData.dewPoint) +
-          ",\"batteryPercentage\":" + String(sensorData.batteryPercentage) +
-          ",\"batteryVoltage\":" + String(sensorData.batteryVoltage) + "}";
+    String jsonPayload =
+        "{\"temperature\":" + String(sensorData.temperature) +
+        ",\"humidity\":" + String(sensorData.humidity) +
+        ",\"moisture\":" + String(sensorData.moisture) +
+        ",\"hic\":" + String(sensorData.hic) +
+        ",\"batteryPercentage\":" + String(sensorData.batteryPercentage) +
+        ",\"batteryVoltage\":" + String(sensorData.batteryVoltage) + "}";
 
-      DEBUG("Sending JSON payload: ");
-      DEBUGLN(jsonPayload);
+    DEBUG("Sending JSON payload: ");
+    DEBUGLN(jsonPayload);
 
-      // Send POST request
-      int httpResponseCode = http.POST(jsonPayload);
+    // Send POST request
+    int httpResponseCode = http.POST(jsonPayload);
 
-      // Check response
-      if (httpResponseCode > 0) {
-        DEBUGLN(String("HTTP POST response code: ") + String(httpResponseCode));
-        if (httpResponseCode == HTTP_CODE_FORBIDDEN) {
-          DEBUGLN("Expired or invalid token.");
-          networkPreferences.begin("stacy", true);
-          String email = networkPreferences.getString("email");
-          String password = networkPreferences.getString("user_password");
-          networkPreferences.end();
+    // Check response
+    if (httpResponseCode > 0) {
+      DEBUGLN(String("HTTP POST response code: ") + String(httpResponseCode));
+      if (httpResponseCode == HTTP_CODE_FORBIDDEN) {
+        DEBUGLN("Expired or invalid token. Refreshing token...");
+        bool worked = NetworkHandler::refreshToken();
 
-          NetworkHandler::loginUser(email, password);
-          DEBUGLN("Re-attempting to send data after re-login.");
-          NetworkHandler::sendDataToServer(sensorData);
+        if (!worked) {
+          DEBUGLN("Failed to refresh token. Cannot send data.");
+          return;
         }
-      } else {
-        DEBUGLN(String("HTTP POST failed, error: ") +
-                http.errorToString(httpResponseCode));
+        DEBUGLN("Re-attempting to send data after token refresh.");
+        NetworkHandler::sendDataToServer(sensorData);
       }
-
-      // End HTTP connection
-      http.end();
     } else {
-      DEBUGLN("HTTP connection failed. Unable to begin.");
+      DEBUGLN(String("HTTP POST failed, error: ") +
+              http.errorToString(httpResponseCode));
     }
+    // End HTTP connection
+    http.end();
   } else {
-    DEBUGLN("WiFi not connected. Cannot send data.");
+    DEBUGLN("HTTP connection failed. Unable to begin.");
   }
 }
 
@@ -141,7 +136,8 @@ bool NetworkHandler::loginUser(const String &email, const String &password) {
 
   if (WiFi.status() == WL_CONNECTED) {
     HTTPClient http;
-    WiFiClient client;
+    WiFiClientSecure client;
+    client.setInsecure();
 
     DEBUG("Logging in user: ");
     DEBUGLN(email);
@@ -171,12 +167,15 @@ bool NetworkHandler::loginUser(const String &email, const String &password) {
         DEBUGLN("Response: " + response);
         http.end();
 
-        // Parse the user ID from the response (assuming it's in JSON format)
+        // Parse the user ID from the response (assuming it's in JSON format :
+        // {"uid":"..."} )
         JsonDocument doc;
         DeserializationError error = deserializeJson(doc, response);
         if (!error) {
-          String uid = doc["uid"].as<String>();
           DEBUGLN("Parsed JSON successfully.");
+          // Show the document content
+          DEBUGLN("Document content: " + doc.as<String>());
+          String uid = doc["uid"].as<String>();
           DEBUGLN("User ID: " + uid);
 
           // Store the auth token and user ID in preferences
@@ -217,12 +216,13 @@ void NetworkHandler::createPlant(String plantName) {
 
   if (WiFi.status() == WL_CONNECTED) {
     HTTPClient http;
-    WiFiClient client;
-
-    DEBUG("Creating plant on server: ");
-    DEBUGLN(SERVER_URL);
+    WiFiClientSecure client;
+    client.setInsecure();
 
     if (http.begin(client, String(SERVER_URL) + "/plants")) {
+      DEBUG("Creating plant on server: ");
+      DEBUGLN(String(SERVER_URL) + "/plants");
+
       networkPreferences.begin("stacy", true);
       String uid = networkPreferences.getString("uid", "");
       String bearerToken = networkPreferences.getString("bearer_token", "");
@@ -237,19 +237,23 @@ void NetworkHandler::createPlant(String plantName) {
 
       DEBUG("Sending JSON payload: ");
       DEBUGLN(jsonPayload);
+      DEBUG("UID: ");
+      DEBUGLN(uid);
+      DEBUG("Bearer Token: ");
+      DEBUGLN(bearerToken);
 
       // Send POST request
       int httpResponseCode = http.POST(jsonPayload);
 
       if (httpResponseCode == HTTP_CODE_FORBIDDEN) {
-        DEBUGLN("Expired or invalid token.");
-        networkPreferences.begin("stacy", true);
-        String email = networkPreferences.getString("email");
-        String password = networkPreferences.getString("user_password");
-        networkPreferences.end();
+        DEBUGLN("Expired or invalid token. Refreshing token...");
+        bool worked = NetworkHandler::refreshToken();
 
-        NetworkHandler::loginUser(email, password);
-        DEBUGLN("Re-attempting to send data after re-login.");
+        if (!worked) {
+          DEBUGLN("Failed to refresh token. Cannot create plant.");
+          return;
+        }
+        DEBUGLN("Re-attempting to create plant after token refresh.");
         NetworkHandler::createPlant(plantName);
       } else if (httpResponseCode == HTTP_CODE_CREATED) {
         DEBUGLN(String("HTTP POST response code: ") + String(httpResponseCode));
@@ -278,16 +282,84 @@ void NetworkHandler::createPlant(String plantName) {
           DEBUGLN("Failed to parse JSON response: " + String(error.c_str()));
         }
       } else {
-        DEBUGLN(String("HTTP POST failed, error: ") +
-                http.errorToString(httpResponseCode));
+        DEBUGLN(String("HTTP POST failed, code: ") + String(httpResponseCode) +
+                ", error: " + http.errorToString(httpResponseCode));
       }
-
       http.end();
     } else {
       DEBUGLN("HTTP connection failed. Unable to begin.");
     }
   } else {
     DEBUGLN("WiFi not connected. Cannot create plant.");
+  }
+}
+
+/**
+ * @brief Refreshes the bearer token by using the /refresh endpoint.
+ * This function should be called when the token is expired or invalid.
+ * It should send the expired token as well as the device ID and UID.
+ * @return True if the token was refreshed successfully, false otherwise.
+ */
+bool NetworkHandler::refreshToken() {
+  if (WiFi.status() != WL_CONNECTED) {
+    NetworkHandler::connectToWiFi();
+    delay(DELAY_STANDARD);
+  }
+
+  if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
+    WiFiClientSecure client;
+    client.setInsecure();
+
+    DEBUGLN("Refreshing bearer token...");
+
+    if (http.begin(client, String(SERVER_URL) + "/refresh")) {
+      networkPreferences.begin("stacy", true);
+      String bearerToken = networkPreferences.getString("bearer_token", "");
+      String uid = networkPreferences.getString("uid", "");
+      networkPreferences.end();
+
+      http.addHeader("Content-Type", "application/json");
+      http.addHeader("Authorization", "Bearer " + bearerToken);
+      http.addHeader("Device-ID", getMacAddress());
+      http.addHeader("UID", uid);
+
+      int httpResponseCode = http.POST("{}");
+
+      if (httpResponseCode == HTTP_CODE_OK) {
+        String response = http.getString();
+        DEBUGLN(String("HTTP POST response code: ") + String(httpResponseCode));
+        DEBUGLN("Response: " + response);
+
+        JsonDocument doc;
+        DeserializationError error = deserializeJson(doc, response);
+        if (!error) {
+          String newToken = doc["auth_token"].as<String>();
+          DEBUGLN("Parsed JSON successfully.");
+          DEBUGLN("New Bearer Token: " + newToken);
+
+          networkPreferences.begin("stacy", false);
+          networkPreferences.putString("bearer_token", newToken);
+          networkPreferences.end();
+
+          return true;
+        } else {
+          DEBUGLN("Failed to parse JSON response: " + String(error.c_str()));
+          return false;
+        }
+      } else {
+        DEBUGLN(String("HTTP POST failed, code: ") + String(httpResponseCode) +
+                ", error: " + http.errorToString(httpResponseCode));
+        return false;
+      }
+      http.end();
+    } else {
+      DEBUGLN("HTTP connection failed. Unable to begin.");
+      return false;
+    }
+  } else {
+    DEBUGLN("WiFi not connected. Cannot refresh token.");
+    return false;
   }
 }
 

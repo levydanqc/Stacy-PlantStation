@@ -4,15 +4,17 @@
 #include <EnvironmentCalculations.h>
 
 // Battery
-#define BATTERY_PIN 1
-#define BATTERY_MAX 4.2
+#define BATTERY_PIN A1
+#define BATTERY_MAX 3.8
 #define BATTERY_MIN 3.0
 
 // HDC3022
 #define HDC3022_ADDR 0x44
 
 // Capacitance
-#define CAPACITANCE_PIN 2
+#define CAPACITANCE_PIN A2
+#define AIR_VALUE 3725
+#define WATER_VALUE 2125
 
 // I2C
 #define I2C_SDA_PIN 8
@@ -26,12 +28,12 @@
 #define EEPROM_SCALE_ADDR 4
 
 // Constants
-#define DELAY_LONG 3000
+#define DELAY_LONG 750
 #define DELAY_STANDARD 250
 #define DELAY_SHORT 25
 #define uS_TO_S_FACTOR 1000000ULL
 #define TIME_TO_SLEEP 5
-#define AP_SSID "Stacy PlantStation"
+#define AP_SSID "PlantStation"
 #define DNS_PORT 53
 
 // EnvironmentCalculations settings

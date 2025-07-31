@@ -1,5 +1,3 @@
-#define DEBUG_MODE 1
-
 #include "configuration.h"
 #include "credentials.h"
 #include "debug.h"
@@ -33,60 +31,36 @@ void setup() {
   String storedWifiPWD = preferences.getString("wifi_password");
   String storedUID = preferences.getString("uid");
   String storedBearerToken = preferences.getString("bearer_token");
-  String storedEmail = preferences.getString("email");
-  String storedPwd = preferences.getString("user_password");
   String storedPlantName = preferences.getString("plant_name");
   String storedPlantId = preferences.getString("plant_id");
+  preferences.end();
 
   DEBUGLN("Stored Wi-Fi SSID: " + storedSSID);
   DEBUGLN("Stored Wi-Fi Password: " + storedWifiPWD);
   DEBUGLN("Stored UID: " + storedUID);
   DEBUGLN("Stored Bearer Token: " + storedBearerToken);
-  DEBUGLN("Stored Email: " + storedEmail);
-  DEBUGLN("Stored Password: " + storedPwd);
   DEBUGLN("Stored Plant Name: " + storedPlantName);
   DEBUGLN("Stored Plant ID: " + storedPlantId);
 
-  // if no UID is stored but email and password are present
-  if (storedUID.length() < 1 && storedEmail.length() > 1 &&
-      storedPwd.length() > 1) {
-    DEBUGLN("No UID found but email and password are present. Attempting to "
-            "login and create UID.");
-    storedUID = NetworkHandler::loginUser(storedEmail, storedPwd);
-    if (!storedUID.isEmpty()) {
-      DEBUGLN("UID created successfully: " + storedUID);
-      preferences.putString("uid", storedUID);
-    } else {
-      DEBUGLN("Failed to create UID. Please check your credentials.");
-    }
-  }
-
   // if uid is stored but no plant_id, create one
-  if (storedUID.length() > 1 && storedPlantId.length() < 1 &&
-      storedPlantName.length() > 1) {
+  if (storedUID.length() > 1 && storedPlantId.length() < 1) {
     DEBUGLN("No Plant ID found but UID and Plant Name are present. Attempting "
             "to create Plant ID.");
     NetworkHandler::createPlant(storedPlantName);
   }
 
-  // if email and password are present but no bearer token or no uid, get them
-  if (storedEmail.length() > 1 && storedPwd.length() > 1 &&
-      (storedBearerToken.length() < 1 || storedUID.length() < 1)) {
-    DEBUGLN("No Bearer Token found but UID is present. Attempting to create "
-            "Bearer Token.");
-    NetworkHandler::loginUser(storedEmail, storedPwd);
-  }
-
-  preferences.end();
-
   if (storedSSID.length() > 1 && storedWifiPWD.length() > 1 &&
-      storedUID.length() > 1) {
+      storedUID.length() > 1 && storedBearerToken.length() > 1) {
     DEBUGLN("Stored Wi-Fi credentials found. Starting Normal Mode.");
     startNormalMode();
+  } else if (storedSSID.length() > 1 && storedWifiPWD.length() > 1 &&
+             storedUID.length() < 1) {
+    DEBUGLN("No UID found but Wi-Fi credentials are present. Starting "
+            "mDNS.");
+    CaptivePortal captivePortal;
+    captivePortal.startMDNS();
   } else {
-    DEBUGLN(
-        "No Wi-Fi credentials found. Starting Initial Mode (Captive Portal).");
-    // Start Captive Portal for Wi-Fi configuration
+    DEBUGLN("No stored Wi-Fi credentials found. Starting Captive Portal.");
     CaptivePortal captivePortal;
     captivePortal.begin();
   }
@@ -102,29 +76,24 @@ void startNormalMode() {
   NetworkHandler::connectToWiFi();
 
   SensorData data;
-  // if (!SensorHandler::initHDC()) {
-  //   DEBUGLN("Failed to initialize HDC3022 sensor. Exiting Normal Mode.");
-  //   data.temperature = 0.0;
-  //   data.humidity = 0.0;
-  //   data.moisture = 0.0;
-  //   data.hic = 0.0;
-  //   return;
-  // } else {
-  //   SensorHandler::readSensorData(data);
-  // }
+  if (!SensorHandler::initHDC()) {
+    DEBUGLN("Failed to initialize HDC3022 sensor.");
+    data.temperature = 0.0;
+    data.humidity = 0.0;
+    data.moisture = 0.0;
+    data.hic = 0.0;
+    // return;
+  } else {
+    SensorHandler::readSensorData(data);
+  }
   BatteryMonitor::getBatteryStatus(data);
-
-  data.temperature = 25.0;
-  data.humidity = 50.0;
-  data.moisture = 20.0;
-  data.hic = 25.1;
-  data.batteryVoltage = 3.9;
-  data.batteryPercentage = 95.0;
+  // data.batteryPercentage = 1.0;
+  // data.batteryVoltage = 1.0;
 
   NetworkHandler::sendDataToServer(data);
 
   // Signal the TPL5110 to turn off power
-  // powerOff();
+  powerOff();
 }
 
 /**

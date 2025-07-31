@@ -23,6 +23,12 @@ const weatherRoutes = (app, clients) => {
       rawDataFromDevice.batteryPercentage == 0
     ) {
       console.warn('Unauthorized: Invalid sensor data received');
+      console.warn(
+        'Received data: ',
+        rawDataFromDevice,
+        'from device: ',
+        device_id
+      );
       return res
         .status(400)
         .send({ message: 'Unauthorized: Invalid sensor data received.' });

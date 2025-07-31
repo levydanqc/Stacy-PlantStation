@@ -8,19 +8,14 @@
  * @return The battery voltage.
  */
 float BatteryMonitor::readBatteryVoltage() {
-  //   uint32_t Vbatt = 0;
-  // for(int i = 0; i < 16; i++) {
-  //   Vbatt = Vbatt + analogReadMilliVolts(A0); // ADC with correction
-  // }
-  // float Vbattf = 2 * Vbatt / 16 / 1000.0;     // attenuation ratio 1/2,
-  // mV --> V
+  uint32_t Vbatt = 0;
+  for (int i = 0; i < 16; i++) {
+    Vbatt = Vbatt + analogReadMilliVolts(BATTERY_PIN);
+  }
+  // attenuation ratio 1/2, mV --> V
+  float Vbattf = 2 * Vbatt / 16 / 1000.0;
 
-  analogSetPinAttenuation(BATTERY_PIN,
-                          ADC_11db);      // Configure ADC for 0-2.5V range
-  uint16_t raw = analogRead(BATTERY_PIN); // Read raw ADC value
-  float vOut = (raw / 4095.0) * 2.5;      // Convert ADC value to voltage
-  float vBattery = vOut / 0.5;            // Scale to battery voltage
-  return vBattery;
+  return Vbattf;
 }
 
 /**
