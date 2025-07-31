@@ -20,6 +20,8 @@ void setup() {
   SERIAL_WAIT_FOR_SERIAL;
   SERIAL_SET_DEBUG_OUTPUT(true);
 
+  esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
+
   delay(DELAY_SHORT);
 
   DEBUGLN("ESP32 Woke Up!");
@@ -102,7 +104,8 @@ void startNormalMode() {
  * the TPL5110 to turn off power.
  */
 void powerOff() {
-  digitalWrite(TPL5110_DONE_PIN, LOW);
-  digitalWrite(TPL5110_DONE_PIN, HIGH);
-  delay(100);
+  esp_deep_sleep_start();
+  // digitalWrite(TPL5110_DONE_PIN, LOW);
+  // digitalWrite(TPL5110_DONE_PIN, HIGH);
+  // delay(100);
 }

@@ -32,7 +32,7 @@
 #define DELAY_STANDARD 250
 #define DELAY_SHORT 25
 #define uS_TO_S_FACTOR 1000000ULL
-#define TIME_TO_SLEEP 5
+#define TIME_TO_SLEEP 3600
 #define AP_SSID "PlantStation"
 #define DNS_PORT 53
 
